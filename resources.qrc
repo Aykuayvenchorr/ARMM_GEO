@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/ARMM" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>
