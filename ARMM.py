@@ -141,6 +141,8 @@ class ARMM:
         :type iface: QgsInterface
         """
         # Save reference to the QGIS interface
+        self.cur = None
+        self.conn = None
         self.text_rig = None
         self.new_text = None
         self.text_wp = None
@@ -298,45 +300,21 @@ class ARMM:
         self.dlg.show()
 
         # Установка параметров подключения к базе данных
-        conn = psycopg2.connect(
+        self.conn = psycopg2.connect(
             host="localhost",
             port="5432",
             database="arm_db",
             user="postgres",
             password="postgres"
         )
-        """ lic_area"""
         # Создание курсора для выполнения SQL-запросов
-        cur = conn.cursor()
+        self.cur = self.conn.cursor()
 
-        # Выполнение SQL-запроса для получения всех объектов из таблицы
-        cur.execute("SELECT * FROM lic_area")
-
-        # Получение всех строк lic_area (объектов) из результата запроса
-        rows = cur.fetchall()
-        self.lic_areas = LicArea(rows)
-
-        """ wellpad"""
-        cur.execute("SELECT * FROM wellpad")
-        rows = cur.fetchall()
-        self.wellpads = Wellpad(rows)
-
-        """ rig"""
-        cur.execute("SELECT * FROM rig")
-        rows = cur.fetchall()
-        self.rigs = Rig(rows)
-
-        # Закрытие курсора и соединения с базой данных
-        cur.close()
-        conn.close()
         self.dlg.cmbLic.clear()
-
-        for name in self.lic_areas.get_dict_lic_area():
-            self.dlg.cmbLic.addItem(name)
+        self.fill_lic_areas()
 
         self.model_1 = QStandardItemModel()
         self.model_2 = QStandardItemModel()
-        # self.model_2.clear()
 
         self.dlg.listView_wp.setModel(self.model_1)
         self.dlg.listView_rig.setModel(self.model_2)
@@ -374,6 +352,7 @@ class ARMM:
         self.model_1.clear()
         self.model_2.clear()
         self.model_2.removeRows(0, self.model_2.columnCount())
+        self.load_wellpads()
 
         cur_lic = self.dlg.cmbLic.currentText()
         for key, value in self.wellpads.get_dict_wellpads().items():
@@ -401,6 +380,7 @@ class ARMM:
         """Метод, который заполняет станки для соответствующей плошадки"""
         self.dlg.Rigs.setEnabled(True)
         self.model_2.clear()
+        self.load_rigs()
         # self.model_2.removeRows(0, self.model_2.rowCount())
 
         try:
@@ -539,7 +519,8 @@ class ARMM:
             conn.close()
             self.dlg.lineEdit.clear()
             # перезагружаем окно, оставляя ЛУ выбранным, чтобы не выходить и заходить заново в модуль
-            self.run()
+            self.load_wellpads()
+            # self.run()
             self.dlg.cmbLic.setItemText(0, cur_lic)
 
     def edit_rigs(self):
@@ -591,7 +572,7 @@ class ARMM:
             conn.close()
             self.dlg.lineEdit_2.clear()
             # перезагружаем окно, оставляя ЛУ выбранным, чтобы не выходить и заходить заново в модуль
-            self.run()
+            # self.run()
             self.dlg.cmbLic.setItemText(0, cur_lic)
             # как сделать так, чтобы не надо было заново заходить в площадки
             # self.dlg.listView_wp.setItem(self.text_wp)
@@ -692,3 +673,29 @@ class ARMM:
             self.iface.mapCanvas().zoomToFeatureIds(layer, [cur_rig_id])
         else:
             print(f"Слой {layer_name} не найден!")
+
+    def load_wellpads(self):
+        """Метод для получения площадок из БД"""
+        self.cur.execute("SELECT * FROM wellpad")
+        rows = self.cur.fetchall()
+        self.wellpads = Wellpad(rows)
+
+    def load_rigs(self):
+        """Метод для получения станков из БД"""
+        self.cur.execute("SELECT * FROM rig")
+        rows = self.cur.fetchall()
+        self.rigs = Rig(rows)
+        # self.cur.close()
+        # self.conn.close()
+
+    def fill_lic_areas(self):
+        """Метод для получения лицензионных участков из БД"""
+        # Выполнение SQL-запроса для получения всех объектов из таблицы
+        self.cur.execute("SELECT * FROM lic_area")
+
+        # Получение всех строк lic_area (объектов) из результата запроса
+        rows = self.cur.fetchall()
+        self.lic_areas = LicArea(rows)
+
+        for name in self.lic_areas.get_dict_lic_area():
+            self.dlg.cmbLic.addItem(name)
