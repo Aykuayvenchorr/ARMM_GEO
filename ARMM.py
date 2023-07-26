@@ -321,7 +321,7 @@ class ARMM:
 
         self.dlg.cmbLic.currentTextChanged.connect(self.choose_lic_area)
 
-        self.dlg.pushButton.clicked.connect(self.update_list_lic_areas)
+        self.dlg.pushButton.clicked.connect(self.fill_lic_areas)
 
         self.dlg.listView_wp.doubleClicked.connect(self.change_func)
         self.dlg.listView_wp.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -463,14 +463,14 @@ class ARMM:
 
     def edit_wellpads(self):
         """Метод, который позволяет добавлять и редактировать существующие площадки"""
-        conn = psycopg2.connect(
-            host="localhost",
-            port="5432",
-            database="arm_db",
-            user="postgres",
-            password="postgres"
-        )
-        cur = conn.cursor()
+        # conn = psycopg2.connect(
+        #     host="localhost",
+        #     port="5432",
+        #     database="arm_db",
+        #     user="postgres",
+        #     password="postgres"
+        # )
+        # cur = conn.cursor()
         cur_lic = self.dlg.cmbLic.currentText()
 
         model = self.dlg.tableView_2.model()
@@ -482,11 +482,11 @@ class ARMM:
             if self.dlg.checkBox.isChecked():
                 relevant = True
             wp = (self.new_text, luid, relevant)
-            cur.execute("INSERT INTO wellpad (name, luid, rel) VALUES (%s, %s, %s)", wp)
-            conn.commit()
+            self.cur.execute("INSERT INTO wellpad (name, luid, rel) VALUES (%s, %s, %s)", wp)
+            self.conn.commit()
             print("Данные добавлены")
-            cur.close()
-            conn.close()
+            self.cur.close()
+            self.conn.close()
             self.dlg.lineEdit.clear()
             self.run()
             self.dlg.cmbLic.setItemText(0, cur_lic)
@@ -500,23 +500,23 @@ class ARMM:
                 relevant = True
             if new_name:
                 sql_update_query = """Update wellpad set name = %s, rel = %s where name = %s"""
-                cur.execute(sql_update_query, (new_name, relevant, self.text_wp))
+                self.cur.execute(sql_update_query, (new_name, relevant, self.text_wp))
             if new_name_ != self.text_wp:
                 sql_query = """
                         UPDATE wellpad
                         SET name = %s
                         WHERE id = %s
                         """
-                cur.execute(sql_query, (new_name_, object_id))
+                self.cur.execute(sql_query, (new_name_, object_id))
 
-                conn.commit()
+                self.conn.commit()
             else:
                 sql_update_query = """Update wellpad set name = %s, rel = %s where name = %s"""
-                cur.execute(sql_update_query, (self.text_wp, relevant, self.text_wp))
-            conn.commit()
+                self.cur.execute(sql_update_query, (self.text_wp, relevant, self.text_wp))
+            self.conn.commit()
             print("Данные обновлены")
-            cur.close()
-            conn.close()
+            # cur.close()
+            # conn.close()
             self.dlg.lineEdit.clear()
             # перезагружаем окно, оставляя ЛУ выбранным, чтобы не выходить и заходить заново в модуль
             self.load_wellpads()
@@ -525,14 +525,14 @@ class ARMM:
 
     def edit_rigs(self):
         """Метод, который позволяет редактировать существующие станки"""
-        conn = psycopg2.connect(
-            host="localhost",
-            port="5432",
-            database="arm_db",
-            user="postgres",
-            password="postgres"
-        )
-        cur = conn.cursor()
+        # conn = psycopg2.connect(
+        #     host="localhost",
+        #     port="5432",
+        #     database="arm_db",
+        #     user="postgres",
+        #     password="postgres"
+        # )
+        # cur = conn.cursor()
         cur_lic = self.dlg.cmbLic.currentText()
 
         model = self.dlg.tableView.model()
@@ -555,21 +555,21 @@ class ARMM:
             if new_name:
                 sql_update_query = """Update rig set name = %s, type =  %s, nds = %s, nwells = %s, radius = %s, 
                 rel = %s where name = %s"""
-                cur.execute(sql_update_query, (new_name, type_, nds_, nwells_, radius_, relevant, self.text_rig))
+                self.cur.execute(sql_update_query, (new_name, type_, nds_, nwells_, radius_, relevant, self.text_rig))
             if new_name_ != self.text_rig:
                 sql_query = """Update rig set name = %s, type =  %s, nds = %s, nwells = %s, radius = %s, 
                 rel = %s where id = %s"""
-                cur.execute(sql_query, (new_name_, type_, nds_, nwells_, radius_, relevant, object_id))
+                self.cur.execute(sql_query, (new_name_, type_, nds_, nwells_, radius_, relevant, object_id))
             else:
                 sql_update_query = """Update rig set name = %s, type =  %s, nds = %s, nwells = %s, radius = %s, 
                 rel = %s where name = %s"""
-                cur.execute(sql_update_query, (self.text_rig, type_, nds_, nwells_, radius_, relevant, self.text_rig))
+                self.cur.execute(sql_update_query, (self.text_rig, type_, nds_, nwells_, radius_, relevant, self.text_rig))
 
             self.dlg.listView_rig.setModel(self.sort_listview(self.model_2))
-            conn.commit()
+            self.conn.commit()
             print("Данные обновлены")
-            cur.close()
-            conn.close()
+            self.cur.close()
+            self.conn.close()
             self.dlg.lineEdit_2.clear()
             # перезагружаем окно, оставляя ЛУ выбранным, чтобы не выходить и заходить заново в модуль
             # self.run()
@@ -691,6 +691,7 @@ class ARMM:
     def fill_lic_areas(self):
         """Метод для получения лицензионных участков из БД"""
         # Выполнение SQL-запроса для получения всех объектов из таблицы
+        self.dlg.cmbLic.clear()
         self.cur.execute("SELECT * FROM lic_area")
 
         # Получение всех строк lic_area (объектов) из результата запроса
