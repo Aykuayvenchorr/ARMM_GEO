@@ -23,7 +23,7 @@
 """
 from PyQt5.QtCore import QStringListModel, Qt, QAbstractTableModel, QSortFilterProxyModel
 from PyQt5.QtGui import QColor, QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QComboBox, QAbstractItemView, QStyledItemDelegate, QTableView
+from PyQt5.QtWidgets import QComboBox, QAbstractItemView, QStyledItemDelegate, QTableView, QTableWidgetItem
 from PyQt5.uic.properties import QtGui
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
@@ -129,6 +129,86 @@ class MyTableRigModel(QAbstractTableModel):
                 return self.header[section]
 
 
+class MyTableSchemeModel(QAbstractTableModel):
+    def __init__(self, data, header):
+        super().__init__()
+
+        self._data = data
+        self.header = header
+        self.new_data = None
+
+    def rowCount(self, parent):
+        return len(self._data)
+
+    def columnCount(self, parent):
+        return 2
+
+    def data(self, index, role):
+        if role == Qt.DisplayRole or role == Qt.EditRole:
+            return str(self._data[index.row()])
+
+    def setData(self, index, value, role):
+        if role == Qt.EditRole:
+            # if index.column() == 1:
+            self._data[index.row()] = value
+            return True
+        return False
+
+    def get_object(self):
+        return self.new_data
+
+    def flags(self, index):
+        if index.column() in [0, 1]:
+            return Qt.ItemIsEditable | Qt.ItemIsEnabled
+
+        return Qt.ItemIsEnabled
+
+    def headerData(self, section, orientation, role):
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                return self.header[section]
+
+
+class MyTablePositionModel(QAbstractTableModel):
+    def __init__(self, data, header):
+        super().__init__()
+
+        self._data = data
+        self.header = header
+        self.new_data = None
+
+    def rowCount(self, parent):
+        return len(self._data)
+
+    def columnCount(self, parent):
+        return 2
+
+    def data(self, index, role):
+        if role == Qt.DisplayRole or role == Qt.EditRole:
+            return str(self._data[index.column()])
+
+    def setData(self, index, value, role):
+        if role == Qt.EditRole:
+            # if index.column() == 1:
+            self._data[index.column()] = value
+            return True
+        return False
+
+    def get_object(self):
+        return self.new_data
+
+    def flags(self, index):
+        if index.column() in [0, 1]:
+            return Qt.ItemIsEditable | Qt.ItemIsEnabled
+
+        return Qt.ItemIsEnabled
+
+    def headerData(self, section, orientation, role):
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                return self.header[section]
+
+
 class ARMM:
     """QGIS Plugin Implementation."""
 
@@ -157,6 +237,11 @@ class ARMM:
             self.plugin_dir,
             'i18n',
             'ARMM_{}.qm'.format(locale))
+
+        self.file_path = os.path.join(
+            self.plugin_dir,
+            'files',
+            'scheme')
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -322,6 +407,8 @@ class ARMM:
         self.dlg.cmbLic.currentTextChanged.connect(self.choose_lic_area)
 
         self.dlg.pushButton.clicked.connect(self.fill_lic_areas)
+        self.dlg.pushButton_6.clicked.connect(self.save_table_data)
+        self.dlg.pushButton_4.clicked.connect(self.calc_position)
 
         self.dlg.listView_wp.doubleClicked.connect(self.change_func)
         self.dlg.listView_wp.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -342,7 +429,7 @@ class ARMM:
         self.dlg.pushButton_2.clicked.connect(self.edit_wellpads)
         self.dlg.pushButton_3.clicked.connect(self.edit_rigs)
 
-    def choose_lic_area(self, response):
+    def choose_lic_area(self):
         """Метод, который заполняет площадки для соответствующего ЛУ"""
         # считываем текущее значение ЛУ
         self.dlg.Rigs.setEnabled(False)
@@ -371,6 +458,10 @@ class ARMM:
                 # возникает ошибка из-за поля '-------'
                 KeyError
         self.append_wellpad(self.list_wp)
+        for name in self.list_wp:
+            relevant = self.wellpads.get_dict_wellpads()[name][2]
+            wp_id = self.wellpads.get_dict_wellpads()[name][0]
+            self.unactual_rigs(relevant, wp_id)
         if self.list_wp:
             self.list_wp.clear()
 
@@ -382,6 +473,11 @@ class ARMM:
         self.model_2.clear()
         self.load_rigs()
         # self.model_2.removeRows(0, self.model_2.rowCount())
+        # Для того чтобы нельзя было поменять актуальность у станков, у которых площадка неактуальна
+        if not self.wellpads.get_dict_wellpads()[wp][2]:
+            self.dlg.checkBox_2.setEnabled(False)
+        else:
+            self.dlg.checkBox_2.setEnabled(True)
 
         try:
             for key, value in self.rigs.get_dict_rigs().items():
@@ -403,10 +499,14 @@ class ARMM:
         if self.list_rig:
             self.list_rig.clear()
         # self.rigs.null_rigs()
+        self.fill_scheme_table()
+        self.fill_scheme_cmbx()
+
+        # self.fill_position_table()
 
         return self.list_rig
 
-    def change_func(self, index):
+    def change_func(self):
         rez = self.dlg.listView_wp.currentIndex().data()
         # self.model_2.clear()
         # self.model_2.removeRows(0, self.model_2.columnCount())
@@ -485,10 +585,11 @@ class ARMM:
             self.cur.execute("INSERT INTO wellpad (name, luid, rel) VALUES (%s, %s, %s)", wp)
             self.conn.commit()
             print("Данные добавлены")
-            self.cur.close()
-            self.conn.close()
+            # self.cur.close()
+            # self.conn.close()
             self.dlg.lineEdit.clear()
-            self.run()
+            # self.run()
+            self.load_wellpads()
             self.dlg.cmbLic.setItemText(0, cur_lic)
 
         elif self.text_wp in self.wellpads.get_dict_wellpads():
@@ -498,6 +599,13 @@ class ARMM:
             new_name_ = data[1]
             if self.dlg.checkBox.isChecked():
                 relevant = True
+                self.unactual_rigs(relevant, object_id)
+                self.dlg.checkBox_2.setEnabled(True)
+            else:
+                relevant = False
+                self.unactual_rigs(relevant, object_id)
+                # Для того чтобы нельзя было поменять актуальность у станков, у которых площадка неактуальна
+                self.dlg.checkBox_2.setEnabled(False)
             if new_name:
                 sql_update_query = """Update wellpad set name = %s, rel = %s where name = %s"""
                 self.cur.execute(sql_update_query, (new_name, relevant, self.text_wp))
@@ -519,9 +627,10 @@ class ARMM:
             # conn.close()
             self.dlg.lineEdit.clear()
             # перезагружаем окно, оставляя ЛУ выбранным, чтобы не выходить и заходить заново в модуль
-            self.load_wellpads()
-            # self.run()
-            self.dlg.cmbLic.setItemText(0, cur_lic)
+        self.load_wellpads()
+        self.choose_lic_area()
+        # self.run()
+        self.dlg.cmbLic.setItemText(0, cur_lic)
 
     def edit_rigs(self):
         """Метод, который позволяет редактировать существующие станки"""
@@ -563,15 +672,17 @@ class ARMM:
             else:
                 sql_update_query = """Update rig set name = %s, type =  %s, nds = %s, nwells = %s, radius = %s, 
                 rel = %s where name = %s"""
-                self.cur.execute(sql_update_query, (self.text_rig, type_, nds_, nwells_, radius_, relevant, self.text_rig))
+                self.cur.execute(sql_update_query,
+                                 (self.text_rig, type_, nds_, nwells_, radius_, relevant, self.text_rig))
 
             self.dlg.listView_rig.setModel(self.sort_listview(self.model_2))
             self.conn.commit()
             print("Данные обновлены")
-            self.cur.close()
-            self.conn.close()
+            # self.cur.close()
+            # self.conn.close()
             self.dlg.lineEdit_2.clear()
             # перезагружаем окно, оставляя ЛУ выбранным, чтобы не выходить и заходить заново в модуль
+            self.change_func()
             # self.run()
             self.dlg.cmbLic.setItemText(0, cur_lic)
             # как сделать так, чтобы не надо было заново заходить в площадки
@@ -595,11 +706,11 @@ class ARMM:
     def fill_rig_table(self):
         """Метод для детального отображения станка в tableview"""
         rez = self.text_rig
-        header = ['№', 'Название', 'Тип', 'ID площадки', 'НДС', 'Количество скважин', 'Радиус', 'Актуальность']
+        header = ['№', 'Название', 'Тип', 'ID площадки', 'НДС', 'Радиус', 'Актуальность']
         try:
             data = [self.rigs.get_dict_rigs()[rez][0], rez, self.rigs.get_dict_rigs()[rez][1],
                     self.rigs.get_dict_rigs()[rez][2], self.rigs.get_dict_rigs()[rez][3],
-                    self.rigs.get_dict_rigs()[rez][4], self.rigs.get_dict_rigs()[rez][5],
+                    self.rigs.get_dict_rigs()[rez][5],
                     self.rigs.get_dict_rigs()[rez][6]]
 
             model = MyTableRigModel(data, header)
@@ -608,6 +719,33 @@ class ARMM:
             self.dlg.tableView.setModel(model)
         except:
             KeyError
+
+    def fill_position_table(self):
+        """Метод для детального отображения станка в tableview"""
+        # rez = self.text_rig
+        header = ['Позиции', 'Движки']
+        try:
+            data = [1, 2]
+
+            model = MyTableSchemeModel(data, header)
+
+            # Create a QTableView and set the model
+            self.dlg.tableView_3.setModel(model)
+        except:
+            KeyError
+
+    def fill_scheme_table(self):
+        """Метод для детального отображения станка в tableview"""
+
+        data = [
+            ('нулевая', '0_0_0'),
+            ('5_на_15', '5_5_5_15'),
+        ]
+        for row, item in enumerate(data):
+            name_item = QTableWidgetItem(item[0])
+            schema_item = QTableWidgetItem(item[1])
+            self.dlg.tableWidget.setItem(row, 0, name_item)
+            self.dlg.tableWidget.setItem(row, 1, schema_item)
 
     def append_wellpad(self, list_wellpads):
         """Добавление площадок в listview и закрашивание их в соответствии с актуальностью"""
@@ -700,3 +838,96 @@ class ARMM:
 
         for name in self.lic_areas.get_dict_lic_area():
             self.dlg.cmbLic.addItem(name)
+
+    def unactual_rigs(self, relevant, wp_id):
+        sql_update_query = """Update rig set rel = %s where wellpad_id = %s"""
+        self.cur.execute(sql_update_query, (relevant, wp_id))
+        # if not relevant:
+        #     self.dlg.checkBox_2.setEnabled(False)
+        # if relevant:
+        #     self.dlg.checkBox_2.setEnabled(True)
+        # elif relevant:
+        #     self.dlg.checkBox_2.setEnabled(True)
+
+    def save_table_data(self):
+        """Сохранить схемы в файл"""
+        rows = self.dlg.tableWidget.rowCount()
+        columns = self.dlg.tableWidget.columnCount()
+        data = []
+
+        for row in range(rows):
+            row_data = []
+            for col in range(columns):
+                item = self.dlg.tableWidget.item(row, col)
+                if item is not None:
+                    row_data.append(item.text())
+                else:
+                    # row_data.append('')
+                    continue
+            data.append(row_data)
+        # print(data)
+        with open(self.file_path, 'w') as f:
+            for row_data in data:
+                if row_data:
+                    f.write('\t'.join(row_data) + '\n')
+
+        self.fill_scheme_cmbx()
+
+    def fill_scheme_cmbx(self):
+        """Метод для заполнения комбобокса схемами"""
+        scheme = []
+        with open(self.file_path) as f:
+            for line in f:
+                scheme.append(line.split('	')[1])
+
+        existing_items = set(self.dlg.comboBox_2.itemText(i) for i in range(self.dlg.comboBox_2.count()))
+
+        for schem in scheme:
+            if schem not in existing_items:
+                self.dlg.comboBox_2.addItem(schem)
+
+    def calc_position(self):
+        self.dlg.tableWidget_2.clear()
+        self.dlg.tableWidget_2.setHorizontalHeaderLabels(['Позиции', 'Движки'])
+
+        positions = int(self.dlg.lineEdit_3.text())
+        data = []
+        i = 1
+        # print(positions)
+
+        for pos in range(positions):
+            data.append(i)
+            i += 1
+            # print(pos)
+            #    data = [
+            #     ('нулевая', '0_0_0'),
+            #     ('5_на_15', '5_5_5_15'),
+            # ]
+        # print(data)
+
+        schema = self.dlg.comboBox_2.currentText().strip().split('_')
+
+        # for row, item in enumerate(schema):
+        if len(data) >= len(schema):
+            for row, item in enumerate(schema):
+                position = QTableWidgetItem(str(row+1))
+                movement = QTableWidgetItem(str(item))
+                # print(name_item)
+                self.dlg.tableWidget_2.setItem(row, 0, position)
+                self.dlg.tableWidget_2.setItem(row, 1, movement)
+        else:
+            for row, item in enumerate(data):
+                position = QTableWidgetItem(str(item))
+                movement = QTableWidgetItem(str(schema[row]))
+                # print(name_item)
+                self.dlg.tableWidget_2.setItem(row, 0, position)
+                self.dlg.tableWidget_2.setItem(row, 1, movement)
+
+        # print(self.dlg.comboBox_2.currentText())
+        # print(schema)
+
+        # for row, item in enumerate(data):
+        #     name_item = QTableWidgetItem(item[0])
+        #     schema_item = QTableWidgetItem(item[1])
+        #     self.dlg.tableWidget.setItem(row, 0, name_item)
+        #     self.dlg.tableWidget.setItem(row, 1, schema_item)
