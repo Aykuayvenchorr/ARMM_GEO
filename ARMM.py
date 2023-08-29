@@ -698,7 +698,6 @@ class ARMM:
 
             model = MyTableWellpadModel(data, header)
 
-            # Create a QTableView and set the model
             self.dlg.tableView_2.setModel(model)
         except:
             KeyError
@@ -715,32 +714,37 @@ class ARMM:
 
             model = MyTableRigModel(data, header)
 
-            # Create a QTableView and set the model
             self.dlg.tableView.setModel(model)
         except:
             KeyError
 
-    def fill_position_table(self):
-        """Метод для детального отображения станка в tableview"""
-        # rez = self.text_rig
-        header = ['Позиции', 'Движки']
-        try:
-            data = [1, 2]
-
-            model = MyTableSchemeModel(data, header)
-
-            # Create a QTableView and set the model
-            self.dlg.tableView_3.setModel(model)
-        except:
-            KeyError
+    # def fill_position_table(self):
+    #     """Метод для детального отображения станка в tableview"""
+    #     header = ['Позиции', 'Движки']
+    #     try:
+    #         data = [1, 2]
+    #
+    #         model = MyTableSchemeModel(data, header)
+    #
+    #         self.dlg.tableView_3.setModel(model)
+    #     except:
+    #         KeyError
 
     def fill_scheme_table(self):
-        """Метод для детального отображения станка в tableview"""
+        """Метод для заполнения таблицы шаблона схем"""
+        self.dlg.tableWidget.clear()
+        self.dlg.tableWidget.setHorizontalHeaderLabels(['Наименование', 'Схема'])
 
-        data = [
-            ('нулевая', '0_0_0'),
-            ('5_на_15', '5_5_5_15'),
-        ]
+        data = []
+        with open(self.file_path) as file:
+            for line in file:
+                line = line.strip().split('	')
+                print(line)
+                data.append((line[0], line[1]))
+                # data = [
+                #     ('нулевая', '0_0_0'),
+                #     ('5_на_15', '5_5_5_15'),
+                # ]
         for row, item in enumerate(data):
             name_item = QTableWidgetItem(item[0])
             schema_item = QTableWidgetItem(item[1])
@@ -865,7 +869,6 @@ class ARMM:
                     # row_data.append('')
                     continue
             data.append(row_data)
-        # print(data)
         with open(self.file_path, 'w') as f:
             for row_data in data:
                 if row_data:
@@ -878,7 +881,7 @@ class ARMM:
         scheme = []
         with open(self.file_path) as f:
             for line in f:
-                scheme.append(line.split('	')[1])
+                scheme.append(line.strip().split('	')[1])
 
         existing_items = set(self.dlg.comboBox_2.itemText(i) for i in range(self.dlg.comboBox_2.count()))
 
@@ -887,47 +890,30 @@ class ARMM:
                 self.dlg.comboBox_2.addItem(schem)
 
     def calc_position(self):
+        """Вычисление позиций в соответствие со схемой"""
         self.dlg.tableWidget_2.clear()
         self.dlg.tableWidget_2.setHorizontalHeaderLabels(['Позиции', 'Движки'])
 
         positions = int(self.dlg.lineEdit_3.text())
         data = []
         i = 1
-        # print(positions)
 
         for pos in range(positions):
             data.append(i)
             i += 1
-            # print(pos)
-            #    data = [
-            #     ('нулевая', '0_0_0'),
-            #     ('5_на_15', '5_5_5_15'),
-            # ]
-        # print(data)
 
         schema = self.dlg.comboBox_2.currentText().strip().split('_')
 
-        # for row, item in enumerate(schema):
         if len(data) >= len(schema):
             for row, item in enumerate(schema):
                 position = QTableWidgetItem(str(row+1))
                 movement = QTableWidgetItem(str(item))
-                # print(name_item)
                 self.dlg.tableWidget_2.setItem(row, 0, position)
                 self.dlg.tableWidget_2.setItem(row, 1, movement)
         else:
             for row, item in enumerate(data):
                 position = QTableWidgetItem(str(item))
                 movement = QTableWidgetItem(str(schema[row]))
-                # print(name_item)
                 self.dlg.tableWidget_2.setItem(row, 0, position)
                 self.dlg.tableWidget_2.setItem(row, 1, movement)
 
-        # print(self.dlg.comboBox_2.currentText())
-        # print(schema)
-
-        # for row, item in enumerate(data):
-        #     name_item = QTableWidgetItem(item[0])
-        #     schema_item = QTableWidgetItem(item[1])
-        #     self.dlg.tableWidget.setItem(row, 0, name_item)
-        #     self.dlg.tableWidget.setItem(row, 1, schema_item)
