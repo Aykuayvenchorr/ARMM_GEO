@@ -23,7 +23,8 @@
 """
 from PyQt5.QtCore import QStringListModel, Qt, QAbstractTableModel, QSortFilterProxyModel
 from PyQt5.QtGui import QColor, QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QComboBox, QAbstractItemView, QStyledItemDelegate, QTableView, QTableWidgetItem
+from PyQt5.QtWidgets import QComboBox, QAbstractItemView, QStyledItemDelegate, QTableView, QTableWidgetItem, QWidget, \
+    QVBoxLayout, QLabel
 from PyQt5.uic.properties import QtGui
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
@@ -41,7 +42,7 @@ from .modules.wellpad import Wellpad
 from .modules.lic_area import LicArea
 from .resources import *
 # Import the code for the dialog
-from .ARMM_dialog import Ui_MainWindow
+from .ARMM_dialog import Ui_MainWindow, Ui_Dialog
 import os.path
 import psycopg2
 
@@ -221,6 +222,8 @@ class ARMM:
         :type iface: QgsInterface
         """
         # Save reference to the QGIS interface
+        self.rig = None
+        self.dlg_2 = None
         self.cur = None
         self.conn = None
         self.text_rig = None
@@ -242,6 +245,14 @@ class ARMM:
             self.plugin_dir,
             'files',
             'scheme')
+        self.file_path_from = os.path.join(
+            self.plugin_dir,
+            'files',
+            'from_who')
+        self.file_path_crs = os.path.join(
+            self.plugin_dir,
+            'files',
+            'crs')
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -381,6 +392,7 @@ class ARMM:
         if self.first_start:
             self.first_start = False
             self.dlg = Ui_MainWindow()
+            self.dlg_2 = Ui_Dialog()
 
         self.dlg.show()
 
@@ -428,6 +440,15 @@ class ARMM:
 
         self.dlg.pushButton_2.clicked.connect(self.edit_wellpads)
         self.dlg.pushButton_3.clicked.connect(self.edit_rigs)
+        self.dlg.pushButton_5.clicked.connect(self.open_new_window)
+        self.fill_from_cmbx()
+        self.fill_crs_cmbx()
+        self.dlg_2.pushButton_2.clicked.connect(self.close_dialog)
+        self.dlg_2.pushButton.clicked.connect(self.save_docs)
+        self.dlg_2.pushButton.clicked.connect(self.save_dialog)
+
+
+        # self.dlg_2.comboBox.setEditable(True)
 
     def choose_lic_area(self):
         """Метод, который заполняет площадки для соответствующего ЛУ"""
@@ -501,6 +522,7 @@ class ARMM:
         # self.rigs.null_rigs()
         self.fill_scheme_table()
         self.fill_scheme_cmbx()
+        # self.calc_XY_positions()
 
         # self.fill_position_table()
 
@@ -518,6 +540,7 @@ class ARMM:
 
     def change_func_2(self):
         rez = self.dlg.listView_rig.currentIndex().data()
+        self.calc_XY_positions(rez)
         return rez
 
     def update_list_lic_areas(self):
@@ -732,14 +755,14 @@ class ARMM:
 
     def fill_scheme_table(self):
         """Метод для заполнения таблицы шаблона схем"""
-        self.dlg.tableWidget.clear()
+        # self.dlg.tableWidget.clear()
         self.dlg.tableWidget.setHorizontalHeaderLabels(['Наименование', 'Схема'])
 
         data = []
         with open(self.file_path) as file:
             for line in file:
                 line = line.strip().split('	')
-                print(line)
+                # print(line)
                 data.append((line[0], line[1]))
                 # data = [
                 #     ('нулевая', '0_0_0'),
@@ -869,7 +892,8 @@ class ARMM:
                     # row_data.append('')
                     continue
             data.append(row_data)
-        with open(self.file_path, 'w') as f:
+        # открытие файла на дозапись, чтобы не удалялось предыдущее
+        with open(self.file_path, 'a') as f:
             for row_data in data:
                 if row_data:
                     f.write('\t'.join(row_data) + '\n')
@@ -892,7 +916,14 @@ class ARMM:
     def calc_position(self):
         """Вычисление позиций в соответствие со схемой"""
         self.dlg.tableWidget_2.clear()
-        self.dlg.tableWidget_2.setHorizontalHeaderLabels(['Позиции', 'Движки'])
+        self.dlg.tableWidget_2.setHorizontalHeaderLabels(['Позиции', 'Движки', 'X', 'Y', 'id'])
+
+        coords_rig = self.calc_XY_positions(self.change_func_2())
+        rig_X = coords_rig[0]
+        rig_Y = coords_rig[1]
+
+        x = QTableWidgetItem(str(rig_X))
+        y = QTableWidgetItem(str(rig_Y))
 
         positions = int(self.dlg.lineEdit_3.text())
         data = []
@@ -910,10 +941,78 @@ class ARMM:
                 movement = QTableWidgetItem(str(item))
                 self.dlg.tableWidget_2.setItem(row, 0, position)
                 self.dlg.tableWidget_2.setItem(row, 1, movement)
+
+            self.dlg.tableWidget_2.setItem(0, 2, x)
+            self.dlg.tableWidget_2.setItem(0, 3, y)
+
         else:
             for row, item in enumerate(data):
                 position = QTableWidgetItem(str(item))
                 movement = QTableWidgetItem(str(schema[row]))
                 self.dlg.tableWidget_2.setItem(row, 0, position)
                 self.dlg.tableWidget_2.setItem(row, 1, movement)
+            self.dlg.tableWidget_2.setItem(0, 2, x)
+            self.dlg.tableWidget_2.setItem(0, 3, y)
 
+    def open_new_window(self):
+        self.dlg_2.exec_()
+
+    def fill_from_cmbx(self):
+        """Метод для заполнения комбобокса от кого в диалоге"""
+
+        names = []
+        with open(self.file_path_from) as f:
+            for line in f:
+                names.append(line.strip())
+
+        existing_items = set(self.dlg_2.comboBox.itemText(i) for i in range(self.dlg_2.comboBox.count()))
+
+        for name in names:
+            # if schem not in existing_items:
+            self.dlg_2.comboBox.addItem(name)
+
+    def fill_crs_cmbx(self):
+        """Метод для заполнения комбобокса систем координат в диалоге"""
+
+        crs = []
+        with open(self.file_path_crs) as f:
+            for line in f:
+                crs.append(line.strip())
+
+        existing_items = set(self.dlg_2.comboBox_2.itemText(i) for i in range(self.dlg_2.comboBox_2.count()))
+
+        for cr in crs:
+            # if schem not in existing_items:
+            self.dlg_2.comboBox_2.addItem(cr)
+
+    def close_dialog(self):
+        self.dlg_2.close()
+
+    def save_docs(self):
+        pass
+
+    def save_dialog(self):
+
+        date_ = QTableWidgetItem(str(self.dlg_2.dateEdit.date().toPyDate()))
+        from_who = QTableWidgetItem(str(self.dlg_2.comboBox.currentText()))
+        rel = QTableWidgetItem(str(self.dlg_2.checkBox.isChecked()))
+        self.dlg.tableWidget_3.insertRow(0)
+        self.dlg.tableWidget_3.setItem(0, 0, date_)
+        self.dlg.tableWidget_3.setItem(0, 1, from_who)
+        self.dlg.tableWidget_3.setItem(0, 3, rel)
+
+    def calc_XY_positions(self, rig):
+        # rig = self.change_func_2()
+        rig = str(rig)
+        # print(rig)
+
+        # self.cur.execute(f"SELECT ST_AsText(geom) FROM rig WHERE name='{rig}'")
+        self.cur.execute(f"SELECT ST_X(geom), ST_Y(geom) FROM rig WHERE name='{rig}'")
+        rows = self.cur.fetchall()
+        # self.rig = Rig(rows)
+        x = rows[0][0]
+        y = rows[0][1]
+        return x, y
+        # print(self.rig.get_dict_rigs()[rig][-1])
+        # print(x)
+        # print(y)

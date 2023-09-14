@@ -23,9 +23,10 @@
 """
 
 import os
+from datetime import datetime, date
 
 from PyQt5.QtCore import QStringListModel
-from PyQt5.QtWidgets import QMainWindow, QListView, QAbstractItemView
+from PyQt5.QtWidgets import QMainWindow, QListView, QAbstractItemView, QWidget, QVBoxLayout, QLabel, QDialog
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
 
@@ -34,6 +35,8 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'ARMM_dialog_base.ui'))
 
 from PyQt5 import QtCore, QtGui
+from qgsfilewidget import QgsFileWidget
+
 
 
 class Ui_MainWindow(QMainWindow):
@@ -120,6 +123,37 @@ class Ui_MainWindow(QMainWindow):
         self.lineEdit_3.setGeometry(QtCore.QRect(210, 590, 91, 22))
         self.lineEdit_3.setObjectName("lineEdit_3")
 
+        self.label_6 = QtWidgets.QLabel(self.tab_3)
+        self.label_6.setGeometry(QtCore.QRect(30, 20, 121, 21))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.label_6.setFont(font)
+        self.label_6.setObjectName("label_6")
+        self.tableWidget_3 = QtWidgets.QTableWidget(self.tab_3)
+        self.tableWidget_3.setGeometry(QtCore.QRect(20, 50, 425, 461))
+        self.tableWidget_3.setObjectName("tableWidget_3")
+        self.tableWidget_3.setColumnCount(4)
+        # self.tableWidget_3.setRowCount(100)
+        self.tableWidget_3.setHorizontalHeaderLabels(['Дата', 'От кого', 'Система координат', 'Актуальность'])
+
+        self.label_7 = QtWidgets.QLabel(self.tab_3)
+        self.label_7.setGeometry(QtCore.QRect(610, 20, 121, 21))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.label_7.setFont(font)
+        self.label_7.setObjectName("label_7")
+        self.tableWidget_4 = QtWidgets.QTableWidget(self.tab_3)
+        self.tableWidget_4.setGeometry(QtCore.QRect(510, 50, 800, 461))
+        self.tableWidget_4.setObjectName("tableWidget_4")
+        self.tableWidget_4.setColumnCount(5)
+        self.tableWidget_4.setRowCount(100)
+        self.tableWidget_4.setHorizontalHeaderLabels(['Номер', 'X', 'Y', 'Пласт', 'Актуальность'])
+
+        self.pushButton_5 = QtWidgets.QPushButton(self.tab_3)
+        self.pushButton_5.setGeometry(QtCore.QRect(20, 520, 93, 28))
+        self.pushButton_5.setObjectName("pushButton_5")
+
+
         self.label_2 = QtWidgets.QLabel(self.tab)
         self.label_2.setGeometry(QtCore.QRect(400, 10, 81, 31))
         font = QtGui.QFont()
@@ -162,9 +196,9 @@ class Ui_MainWindow(QMainWindow):
         self.tableWidget_2 = QtWidgets.QTableWidget(self.tab)
         self.tableWidget_2.setGeometry(QtCore.QRect(10, 120, 291, 461))
         self.tableWidget_2.setObjectName("tableWidget_2")
-        self.tableWidget_2.setColumnCount(2)
+        self.tableWidget_2.setColumnCount(5)
         self.tableWidget_2.setRowCount(100)
-        self.tableWidget_2.setHorizontalHeaderLabels(['Позиции', 'Движки'])
+        self.tableWidget_2.setHorizontalHeaderLabels(['Позиции', 'Движки', 'X', 'Y', 'id'])
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -205,6 +239,110 @@ class Ui_MainWindow(QMainWindow):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "Позиции"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Цели"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Устья"))
+
+        self.label_6.setText(_translate("MainWindow", "Документ"))
+        self.label_7.setText(_translate("MainWindow", "Цели"))
+        self.pushButton_5.setText(_translate("MainWindow", "Добавить"))
+
         self.action.setText(_translate("MainWindow", "Добавить"))
         self.action_2.setText(_translate("MainWindow", "Добавить"))
         self.action_3.setText(_translate("MainWindow", "Добавить"))
+
+
+class Ui_Dialog(QDialog):
+    def __init__(self):
+        QDialog.__init__(self)
+        # Required by Qt4 to initialize the UI
+        self.setupUi(self)
+
+    def setupUi(self, Dialog):
+        Dialog.setObjectName("Dialog")
+        Dialog.resize(540, 384)
+
+        self.label_6 = QtWidgets.QLabel(Dialog)
+        self.label_6.setGeometry(QtCore.QRect(30, 40, 121, 21))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.label_6.setFont(font)
+        self.label_6.setObjectName("label_6")
+        self.label_7 = QtWidgets.QLabel(Dialog)
+        self.label_7.setGeometry(QtCore.QRect(30, 80, 121, 21))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.label_7.setFont(font)
+        self.label_7.setObjectName("label_7")
+        self.label_8 = QtWidgets.QLabel(Dialog)
+        self.label_8.setGeometry(QtCore.QRect(30, 130, 121, 21))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.label_8.setFont(font)
+        self.label_8.setObjectName("label_8")
+        self.label_9 = QtWidgets.QLabel(Dialog)
+        self.label_9.setGeometry(QtCore.QRect(30, 280, 161, 21))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.label_9.setFont(font)
+        self.label_9.setObjectName("label_9")
+        self.dateEdit = QtWidgets.QDateEdit(Dialog)
+        self.dateEdit.setGeometry(QtCore.QRect(200, 40, 201, 22))
+        self.dateEdit.setObjectName("dateEdit")
+
+        self.dateEdit.setDate(date.today())
+
+        self.checkBox = QtWidgets.QCheckBox(Dialog)
+        self.checkBox.setGeometry(QtCore.QRect(200, 130, 81, 20))
+        self.checkBox.setText("")
+        self.checkBox.setObjectName("checkBox")
+        self.checkBox.setChecked(True)
+
+        self.comboBox = QtWidgets.QComboBox(Dialog)
+        self.comboBox.setGeometry(QtCore.QRect(200, 80, 201, 22))
+        self.comboBox.setObjectName("comboBox")
+        self.comboBox.setEditable(True)
+
+        self.comboBox_2 = QtWidgets.QComboBox(Dialog)
+        self.comboBox_2.setGeometry(QtCore.QRect(200, 280, 201, 22))
+        self.comboBox_2.setObjectName("comboBox_2")
+        self.comboBox_2.setEditable(True)
+
+        self.mQgsFileWidget = QgsFileWidget(Dialog)
+        self.mQgsFileWidget.setGeometry(QtCore.QRect(200, 170, 171, 27))
+        self.mQgsFileWidget.setObjectName("mQgsFileWidget")
+        self.mQgsFileWidget_2 = QgsFileWidget(Dialog)
+        self.mQgsFileWidget_2.setGeometry(QtCore.QRect(200, 220, 171, 27))
+        self.mQgsFileWidget_2.setObjectName("mQgsFileWidget_2")
+        self.label_10 = QtWidgets.QLabel(Dialog)
+        self.label_10.setGeometry(QtCore.QRect(30, 170, 121, 21))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.label_10.setFont(font)
+        self.label_10.setObjectName("label_10")
+        self.label_11 = QtWidgets.QLabel(Dialog)
+        self.label_11.setGeometry(QtCore.QRect(30, 220, 121, 21))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.label_11.setFont(font)
+        self.label_11.setObjectName("label_11")
+
+        self.pushButton = QtWidgets.QPushButton(Dialog)
+        self.pushButton.setGeometry(QtCore.QRect(120, 340, 111, 28))
+        self.pushButton.setObjectName("pushButton")
+        self.pushButton_2 = QtWidgets.QPushButton(Dialog)
+        self.pushButton_2.setGeometry(QtCore.QRect(280, 340, 111, 28))
+        self.pushButton_2.setObjectName("pushButton_2")
+
+        self.retranslateUi(Dialog)
+        QtCore.QMetaObject.connectSlotsByName(Dialog)
+
+    def retranslateUi(self, Dialog):
+        _translate = QtCore.QCoreApplication.translate
+        # Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
+        self.label_6.setText(_translate("Dialog", "Дата"))
+        self.label_7.setText(_translate("Dialog", "От кого"))
+        self.label_8.setText(_translate("Dialog", "Актуальность"))
+        self.label_9.setText(_translate("Dialog", "Система координат"))
+        self.label_10.setText(_translate("Dialog", "Документ"))
+        self.label_11.setText(_translate("Dialog", "Цели"))
+        self.pushButton.setText(_translate("Dialog", "Сохранить"))
+        self.pushButton_2.setText(_translate("Dialog", "Отмена"))
+
