@@ -21,6 +21,8 @@
  *                                                                         *
  ***************************************************************************/
 """
+import uuid
+
 from PyQt5.QtCore import QStringListModel, Qt, QAbstractTableModel, QSortFilterProxyModel
 from PyQt5.QtGui import QColor, QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QComboBox, QAbstractItemView, QStyledItemDelegate, QTableView, QTableWidgetItem, QWidget, \
@@ -37,6 +39,8 @@ from qgis.core import (
 )
 
 # Initialize Qt resources from file resources.py
+from .modules.position import Position
+from .modules.point import Point
 from .modules.rig import Rig
 from .modules.wellpad import Wellpad
 from .modules.lic_area import LicArea
@@ -45,6 +49,7 @@ from .resources import *
 from .ARMM_dialog import Ui_MainWindow, Ui_Dialog
 import os.path
 import psycopg2
+from .settings import env
 
 
 class MyTableWellpadModel(QAbstractTableModel):
@@ -222,6 +227,7 @@ class ARMM:
         :type iface: QgsInterface
         """
         # Save reference to the QGIS interface
+        self.positions = None
         self.rig = None
         self.dlg_2 = None
         self.cur = None
@@ -441,12 +447,13 @@ class ARMM:
         self.dlg.pushButton_2.clicked.connect(self.edit_wellpads)
         self.dlg.pushButton_3.clicked.connect(self.edit_rigs)
         self.dlg.pushButton_5.clicked.connect(self.open_new_window)
+        self.dlg.pushButton_7.clicked.connect(self.save_positions_to_BD)
+
         self.fill_from_cmbx()
         self.fill_crs_cmbx()
         self.dlg_2.pushButton_2.clicked.connect(self.close_dialog)
         self.dlg_2.pushButton.clicked.connect(self.save_docs)
         self.dlg_2.pushButton.clicked.connect(self.save_dialog)
-
 
         # self.dlg_2.comboBox.setEditable(True)
 
@@ -540,7 +547,7 @@ class ARMM:
 
     def change_func_2(self):
         rez = self.dlg.listView_rig.currentIndex().data()
-        self.calc_XY_positions(rez)
+        # self.calc_XY_positions(rez)
         return rez
 
     def update_list_lic_areas(self):
@@ -761,7 +768,7 @@ class ARMM:
         data = []
         with open(self.file_path) as file:
             for line in file:
-                line = line.strip().split('	')
+                line = line.strip().split('#')
                 # print(line)
                 data.append((line[0], line[1]))
                 # data = [
@@ -893,10 +900,10 @@ class ARMM:
                     continue
             data.append(row_data)
         # открытие файла на дозапись, чтобы не удалялось предыдущее
-        with open(self.file_path, 'a') as f:
+        with open(self.file_path, 'w') as f:
             for row_data in data:
                 if row_data:
-                    f.write('\t'.join(row_data) + '\n')
+                    f.write('#'.join(row_data) + '\n')
 
         self.fill_scheme_cmbx()
 
@@ -905,7 +912,7 @@ class ARMM:
         scheme = []
         with open(self.file_path) as f:
             for line in f:
-                scheme.append(line.strip().split('	')[1])
+                scheme.append(line.strip().split('#')[1])
 
         existing_items = set(self.dlg.comboBox_2.itemText(i) for i in range(self.dlg.comboBox_2.count()))
 
@@ -925,6 +932,10 @@ class ARMM:
         x = QTableWidgetItem(str(rig_X))
         y = QTableWidgetItem(str(rig_Y))
 
+        self.dlg.tableWidget_2.setItem(0, 2, x)
+        self.dlg.tableWidget_2.setItem(0, 3, y)
+
+        # print(x)
         positions = int(self.dlg.lineEdit_3.text())
         data = []
         i = 1
@@ -932,27 +943,45 @@ class ARMM:
         for pos in range(positions):
             data.append(i)
             i += 1
+        schema = ['0']
+        [schema.append(el) for el in self.dlg.comboBox_2.currentText().strip().split('_')]
+        # print(schema)
 
-        schema = self.dlg.comboBox_2.currentText().strip().split('_')
-
-        if len(data) >= len(schema):
+        if len(data) >= len(schema[1::]):
             for row, item in enumerate(schema):
-                position = QTableWidgetItem(str(row+1))
-                movement = QTableWidgetItem(str(item))
-                self.dlg.tableWidget_2.setItem(row, 0, position)
-                self.dlg.tableWidget_2.setItem(row, 1, movement)
+                if row != len(schema):
+                    position = QTableWidgetItem(str(row + 1))
+                    movement = QTableWidgetItem(str(item))
+                    self.dlg.tableWidget_2.setItem(row, 0, position)
+                    self.dlg.tableWidget_2.setItem(row, 1, movement)
 
-            self.dlg.tableWidget_2.setItem(0, 2, x)
-            self.dlg.tableWidget_2.setItem(0, 3, y)
+                    self.dlg.tableWidget_2.setItem(row, 2, QTableWidgetItem(str(self.positions[row][0])))
+                    self.dlg.tableWidget_2.setItem(row, 3, QTableWidgetItem(str(self.positions[row][1])))
+                    if row != 0:
+                        self.dlg.tableWidget_2.setItem(row, 4, QTableWidgetItem(str(uuid.uuid4())))
+
+            # self.dlg.tableWidget_2.setItem(0, 2, x)
+            # self.dlg.tableWidget_2.setItem(0, 3, y)
 
         else:
-            for row, item in enumerate(data):
-                position = QTableWidgetItem(str(item))
+            position = QTableWidgetItem('1')
+            movement = QTableWidgetItem('0')
+            self.dlg.tableWidget_2.setItem(0, 0, position)
+            self.dlg.tableWidget_2.setItem(0, 1, movement)
+            # self.dlg.tableWidget_2.setItem(row, 2, QTableWidgetItem(str(self.positions[row][0])))
+            # self.dlg.tableWidget_2.setItem(row, 3, QTableWidgetItem(str(self.positions[row][1])))
+            for row, item in enumerate(data, start=1):
+                position = QTableWidgetItem(str(item + 1))
                 movement = QTableWidgetItem(str(schema[row]))
                 self.dlg.tableWidget_2.setItem(row, 0, position)
                 self.dlg.tableWidget_2.setItem(row, 1, movement)
-            self.dlg.tableWidget_2.setItem(0, 2, x)
-            self.dlg.tableWidget_2.setItem(0, 3, y)
+                self.dlg.tableWidget_2.setItem(row, 2, QTableWidgetItem(str(self.positions[row][0])))
+                self.dlg.tableWidget_2.setItem(row, 3, QTableWidgetItem(str(self.positions[row][1])))
+                if row != 0:
+                    self.dlg.tableWidget_2.setItem(row, 4, QTableWidgetItem(str(uuid.uuid4())))
+
+            # self.dlg.tableWidget_2.setItem(0, 2, x)
+            # self.dlg.tableWidget_2.setItem(0, 3, y)
 
     def open_new_window(self):
         self.dlg_2.exec_()
@@ -992,6 +1021,7 @@ class ARMM:
         pass
 
     def save_dialog(self):
+        """Сохраняет информацию о документе в таблицу в поле Цели"""
 
         date_ = QTableWidgetItem(str(self.dlg_2.dateEdit.date().toPyDate()))
         from_who = QTableWidgetItem(str(self.dlg_2.comboBox.currentText()))
@@ -1002,6 +1032,7 @@ class ARMM:
         self.dlg.tableWidget_3.setItem(0, 3, rel)
 
     def calc_XY_positions(self, rig):
+        """Рассчитывает координаты позиций станка"""
         # rig = self.change_func_2()
         rig = str(rig)
         # print(rig)
@@ -1009,10 +1040,71 @@ class ARMM:
         # self.cur.execute(f"SELECT ST_AsText(geom) FROM rig WHERE name='{rig}'")
         self.cur.execute(f"SELECT ST_X(geom), ST_Y(geom) FROM rig WHERE name='{rig}'")
         rows = self.cur.fetchall()
+        # self.cur.execute(f"SELECT nds FROM rig WHERE name='{rig}'")
+        # nds = float(self.cur.fetchall()[0][0])
+        nds = self.rigs.get_dict_rigs()[rig][3]
+        # print(nds)
+
         # self.rig = Rig(rows)
         x = rows[0][0]
         y = rows[0][1]
+        rig_pos_0 = Point(x, y)
+
+        positions = int(self.dlg.lineEdit_3.text())
+
+        schema = self.dlg.comboBox_2.currentText().strip().split('_')[0:positions]
+
+        calc = Position(rig_pos_0, schema, nds)
+
+        # print(calc.point_on_direction())
+
+        self.positions = calc.point_on_direction()
+
+        # print(x)
+        # print(y)
+        # print(rig_pos_0.x)
         return x, y
         # print(self.rig.get_dict_rigs()[rig][-1])
         # print(x)
         # print(y)
+
+    def save_positions_to_BD(self):
+        """Сохраняет позиции станка в БД"""
+        rows = self.dlg.tableWidget_2.rowCount()
+        columns = self.dlg.tableWidget_2.columnCount()
+        data = []
+
+        for row in range(1, rows):
+            row_data = []
+            item_row = self.dlg.tableWidget_2.item(row, 0)
+            if item_row is not None:
+
+                for col in range(columns):
+                    item = self.dlg.tableWidget_2.item(row, col)
+                    if item is not None:
+                        row_data.append(item.text())
+                    else:
+                        # row_data.append('')
+                        continue
+                data.append(row_data)
+        rig_id_ = self.rigs.get_dict_rigs()[self.change_func_2()][0]
+        print(data)
+        positions = [1]
+
+        for pos in data:
+            self.cur.execute(
+                f"INSERT INTO position (number, geom, rig_id) VALUES ('{pos[0]}', 'Point({float(pos[2])} {float(pos[3])})', '{rig_id_}')")
+            self.conn.commit()
+            print("Данные добавлены")
+
+            positions.append(pos[0])
+
+        self.fill_pos_in_calc_drill(positions)
+
+    def fill_pos_in_calc_drill(self, positions):
+        """Заполняет таблицу с позициями в поле Расчет бурения"""
+        # self.dlg.tableWidget_7.insertRow(0)
+
+        for row, item in enumerate(positions):
+            position = QTableWidgetItem(str(item))
+            self.dlg.tableWidget_7.setItem(row, 0, position)

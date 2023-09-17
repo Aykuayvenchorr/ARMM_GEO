@@ -112,10 +112,52 @@ class Ui_MainWindow(QMainWindow):
         self.tab_3 = QtWidgets.QWidget()
         self.tab_3.setObjectName("tab_3")
         self.tabWidget.addTab(self.tab_3, "")
+
+        self.tab_drill = QtWidgets.QWidget()
+        self.tab_drill.setObjectName("tab_3")
+        self.tabWidget.addTab(self.tab_drill, "")
+
+        self.label_11 = QtWidgets.QLabel(self.tab_drill)
+        self.label_11.setGeometry(QtCore.QRect(60, 30, 121, 21))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.label_11.setFont(font)
+        self.label_11.setObjectName("label_11")
+        self.tableWidget_7 = QtWidgets.QTableWidget(self.tab_drill)
+        self.tableWidget_7.setGeometry(QtCore.QRect(20, 60, 161, 561))
+        self.tableWidget_7.setObjectName("tableWidget_7")
+        self.tableWidget_7.setColumnCount(1)
+        self.tableWidget_7.setRowCount(100)
+        self.label_12 = QtWidgets.QLabel(self.tab_drill)
+        self.label_12.setGeometry(QtCore.QRect(260, 30, 121, 21))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.label_12.setFont(font)
+        self.label_12.setObjectName("label_12")
+        self.tableWidget_8 = QtWidgets.QTableWidget(self.tab_drill)
+        self.tableWidget_8.setGeometry(QtCore.QRect(210, 60, 161, 561))
+        self.tableWidget_8.setObjectName("tableWidget_8")
+        self.tableWidget_8.setColumnCount(1)
+        self.tableWidget_8.setRowCount(100)
+        self.label_13 = QtWidgets.QLabel(self.tab_drill)
+        self.label_13.setGeometry(QtCore.QRect(620, 30, 121, 21))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.label_13.setFont(font)
+        self.label_13.setObjectName("label_13")
+        self.tableWidget_9 = QtWidgets.QTableWidget(self.tab_drill)
+        self.tableWidget_9.setGeometry(QtCore.QRect(440, 60, 531, 561))
+        self.tableWidget_9.setObjectName("tableWidget_9")
+        self.tableWidget_9.setColumnCount(0)
+        self.tableWidget_9.setRowCount(0)
+        self.tabWidget.addTab(self.tab_drill, "")
+
         self.tab_2 = QtWidgets.QWidget()
         self.tab_2.setObjectName("tab_2")
         self.tabWidget.addTab(self.tab_2, "")
         self.verticalLayout_4.addWidget(self.tabWidget)
+
+
 
 
 
@@ -179,6 +221,10 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_6.setGeometry(QtCore.QRect(330, 590, 191, 28))
         self.pushButton_6.setObjectName("pushButton_6")
 
+        self.pushButton_7 = QtWidgets.QPushButton(self.tab)
+        self.pushButton_7.setGeometry(QtCore.QRect(10, 630, 191, 28))
+        self.pushButton_7.setObjectName("pushButton_7")
+
         self.label_5 = QtWidgets.QLabel(self.tab)
         self.label_5.setGeometry(QtCore.QRect(400, 90, 121, 16))
         font = QtGui.QFont()
@@ -235,10 +281,15 @@ class Ui_MainWindow(QMainWindow):
         # self.pushButton_5.setText(_translate("MainWindow", "Изменить"))
         self.pushButton_6.setText(_translate("MainWindow", "Сохранить"))
 
+        self.pushButton_7.setText(_translate("MainWindow", "Сохранить"))
+
+
         self.label_5.setText(_translate("MainWindow", "Шаблоны схем"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "Позиции"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Цели"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Устья"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_drill), _translate("MainWindow", "Расчет бурения"))
+
 
         self.label_6.setText(_translate("MainWindow", "Документ"))
         self.label_7.setText(_translate("MainWindow", "Цели"))
@@ -247,6 +298,10 @@ class Ui_MainWindow(QMainWindow):
         self.action.setText(_translate("MainWindow", "Добавить"))
         self.action_2.setText(_translate("MainWindow", "Добавить"))
         self.action_3.setText(_translate("MainWindow", "Добавить"))
+
+        self.label_11.setText(_translate("MainWindow", "Позиции"))
+        self.label_12.setText(_translate("MainWindow", "Цели"))
+        self.label_13.setText(_translate("MainWindow", "Расчет бурения"))
 
 
 class Ui_Dialog(QDialog):
