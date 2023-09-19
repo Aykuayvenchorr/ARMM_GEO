@@ -22,11 +22,13 @@
  ***************************************************************************/
 """
 import uuid
+import shutil
+import pandas as pd
 
 from PyQt5.QtCore import QStringListModel, Qt, QAbstractTableModel, QSortFilterProxyModel
 from PyQt5.QtGui import QColor, QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QComboBox, QAbstractItemView, QStyledItemDelegate, QTableView, QTableWidgetItem, QWidget, \
-    QVBoxLayout, QLabel
+    QVBoxLayout, QLabel, QTableWidget
 from PyQt5.uic.properties import QtGui
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
@@ -278,6 +280,7 @@ class ARMM:
         self.rigs = None
         self.list_wp = None
         self.list_rig = None
+        self.col = 0
 
     # noinspection PyMethodMayBeStatic
 
@@ -455,6 +458,9 @@ class ARMM:
         self.dlg_2.pushButton.clicked.connect(self.save_docs)
         self.dlg_2.pushButton.clicked.connect(self.save_dialog)
 
+        self.dlg.tableWidget_7.itemDoubleClicked.connect(self.transfer_value)
+        self.dlg.tableWidget_8.setSelectionBehavior(QTableWidget.SelectRows)
+        self.dlg.tableWidget_8.itemPressed.connect(self.copy_selected_cells)
         # self.dlg_2.comboBox.setEditable(True)
 
     def choose_lic_area(self):
@@ -982,6 +988,9 @@ class ARMM:
 
             # self.dlg.tableWidget_2.setItem(0, 2, x)
             # self.dlg.tableWidget_2.setItem(0, 3, y)
+        self.dlg.tableWidget_9.clearContents()
+        self.col = 0
+
 
     def open_new_window(self):
         self.dlg_2.exec_()
@@ -1021,7 +1030,7 @@ class ARMM:
         pass
 
     def save_dialog(self):
-        """Сохраняет информацию о документе в таблицу в поле Цели"""
+        """Сохраняет информацию о документе в таблицу Документы в поле Цели"""
 
         date_ = QTableWidgetItem(str(self.dlg_2.dateEdit.date().toPyDate()))
         from_who = QTableWidgetItem(str(self.dlg_2.comboBox.currentText()))
@@ -1030,6 +1039,8 @@ class ARMM:
         self.dlg.tableWidget_3.setItem(0, 0, date_)
         self.dlg.tableWidget_3.setItem(0, 1, from_who)
         self.dlg.tableWidget_3.setItem(0, 3, rel)
+
+        self.fill_target_table(self.dlg_2.mQgsFileWidget_2)
 
     def calc_XY_positions(self, rig):
         """Рассчитывает координаты позиций станка"""
@@ -1108,3 +1119,103 @@ class ARMM:
         for row, item in enumerate(positions):
             position = QTableWidgetItem(str(item))
             self.dlg.tableWidget_7.setItem(row, 0, position)
+
+    def fill_target_table(self, doc):
+        """Сохраняет файл с целями по указанному пути"""
+        # selected_file = doc.filePath()
+        # doc.setFilePath(env['path_target_save'])
+        shutil.copy(doc.filePath(), env['path_target_save'])
+        self.fill_targets_in_calc_drill()
+        # doc.setStorageMode(3)
+        # print(doc.filePath())
+
+    def fill_targets_in_calc_drill(self):
+        """Заполняет таблицу Цели в поле Расчет бурения"""
+        excel_file_path = f'{env["path_target_save"]}/targ1.xlsx'
+
+        # Загрузить файл Excel в DataFrame
+        df = pd.read_excel(excel_file_path)
+
+        # Выбрать колонку "Наименование" и прочитать ее значения в список
+        number_column = df['Номер'].tolist()
+
+        numbers_targ = []
+
+        # Вывести значения колонки "Номер"
+        for value in number_column:
+            if value not in numbers_targ:
+                numbers_targ.append(value)
+
+        # print(numbers_targ)
+        for row, item in enumerate(numbers_targ):
+            num = QTableWidgetItem(str(item))
+            self.dlg.tableWidget_8.setItem(row, 0, num)
+
+    def transfer_value(self, item):
+        # Проверяем, что выбранная ячейка действительно существует
+        if item:
+            # Получаем текст из выбранной ячейки
+            text = item.text()
+
+            # Создаем новый элемент таблицы для self.dlg.tablewidget_9
+            new_item = QTableWidgetItem(f"{text} позиция")
+            i = 0
+            # self.col = -1
+            # self.k = 0
+
+            for el in self.positions:
+                if self.dlg.tableWidget_9.item(0, i) is None:
+                    # Устанавливаем новый элемент в 1 столбец и 1 строку self.dlg.tablewidget_9
+                    self.dlg.tableWidget_9.setItem(0, i, new_item)
+                    # self.k += 1
+                    # self.col += 1
+
+                else:
+                    i += 1
+                    # self.col += 1
+
+    def copy_selected_cells(self, item):
+        # Получаем выделенные строки
+        selected_rows = self.dlg.tableWidget_8.selectionModel().selectedRows()
+        for i, row in enumerate(selected_rows):
+            text = self.dlg.tableWidget_8.item(row.row(), 0).text()
+            item = QTableWidgetItem(text)
+            self.dlg.tableWidget_9.setItem(i+1, self.col, item)
+            # if self.k == 1:
+            #     self.col += 1
+            #     self.k = 0
+        self.col += 1
+        print(self.col)
+
+
+        # Очищаем столбец 1 self.dlg.tableWidget_9
+        # self.dlg.tableWidget_9.clearContents()
+        # i = 0
+        # k = 0
+        # while self.dlg.tableWidget_9.item(0, k) is not None and self.dlg.tableWidget_9.item(0, k+1) is None:
+        #
+        #     # Вставляем выделенные строки в столбец 1 self.dlg.tableWidget_9
+        #     for i, row in enumerate(selected_rows):
+        #         text = self.dlg.tableWidget_8.item(row.row(), 0).text()
+        #         item = QTableWidgetItem(text)
+        #         self.dlg.tableWidget_9.setItem(i+1, k, item)
+        #     k += 1
+        # Вставляем выделенные строки в столбец 1 self.dlg.tableWidget_9
+        # for el in self.positions:
+        #     if self.dlg.tableWidget_9.item(1, i) is None:
+        #         for k, row in enumerate(selected_rows):
+        #             text = self.dlg.tableWidget_8.item(row.row(), 0).text()
+        #             item = QTableWidgetItem(text)
+        #             self.dlg.tableWidget_9.setItem(k+1, i, item)
+        #     else:
+        #         i += 1
+        # for k in self.positions:
+        #     if self.dlg.tableWidget_9.item(0, i) is not None and self.dlg.tableWidget_9.item(1, i) is None:
+        #
+        #         # Вставляем выделенные строки в столбец 1 self.dlg.tableWidget_9
+        #         for m, row in enumerate(selected_rows):
+        #             text = self.dlg.tableWidget_8.item(row.row(), 0).text()
+        #             item = QTableWidgetItem(text)
+        #             self.dlg.tableWidget_9.setItem(m+1, i, item)
+        #         i += 1
+

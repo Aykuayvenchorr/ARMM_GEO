@@ -128,6 +128,8 @@ class Ui_MainWindow(QMainWindow):
         self.tableWidget_7.setObjectName("tableWidget_7")
         self.tableWidget_7.setColumnCount(1)
         self.tableWidget_7.setRowCount(100)
+        # self.tableWidget_7.isEnabled = True
+        # self.tableWidget_7.setEditTriggers(QAbstractItemView::NoEditTriggers)
         self.label_12 = QtWidgets.QLabel(self.tab_drill)
         self.label_12.setGeometry(QtCore.QRect(260, 30, 121, 21))
         font = QtGui.QFont()
@@ -148,8 +150,8 @@ class Ui_MainWindow(QMainWindow):
         self.tableWidget_9 = QtWidgets.QTableWidget(self.tab_drill)
         self.tableWidget_9.setGeometry(QtCore.QRect(440, 60, 531, 561))
         self.tableWidget_9.setObjectName("tableWidget_9")
-        self.tableWidget_9.setColumnCount(0)
-        self.tableWidget_9.setRowCount(0)
+        self.tableWidget_9.setColumnCount(100)
+        self.tableWidget_9.setRowCount(100)
         self.tabWidget.addTab(self.tab_drill, "")
 
         self.tab_2 = QtWidgets.QWidget()
