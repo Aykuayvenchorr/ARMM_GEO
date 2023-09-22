@@ -154,6 +154,32 @@ class Ui_MainWindow(QMainWindow):
         self.tableWidget_9.setRowCount(100)
         self.tabWidget.addTab(self.tab_drill, "")
 
+        self.tab_7 = QtWidgets.QWidget()
+        self.tab_7.setObjectName("tab_7")
+        self.tableWidget_10 = QtWidgets.QTableWidget(self.tab_7)
+        self.tableWidget_10.setGeometry(QtCore.QRect(30, 60, 531, 561))
+        self.tableWidget_10.setObjectName("tableWidget_10")
+        self.tableWidget_10.setColumnCount(100)
+        self.tableWidget_10.setRowCount(100)
+        self.label_14 = QtWidgets.QLabel(self.tab_7)
+        self.label_14.setGeometry(QtCore.QRect(210, 30, 121, 21))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.label_14.setFont(font)
+        self.label_14.setObjectName("label_14")
+        self.tableWidget_11 = QtWidgets.QTableWidget(self.tab_7)
+        self.tableWidget_11.setGeometry(QtCore.QRect(670, 60, 161, 561))
+        self.tableWidget_11.setObjectName("tableWidget_11")
+        self.tableWidget_11.setColumnCount(1)
+        self.tableWidget_11.setRowCount(100)
+        self.label_15 = QtWidgets.QLabel(self.tab_7)
+        self.label_15.setGeometry(QtCore.QRect(720, 30, 121, 21))
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.label_15.setFont(font)
+        self.label_15.setObjectName("label_15")
+        self.tabWidget.addTab(self.tab_7, "")
+
         self.tab_2 = QtWidgets.QWidget()
         self.tab_2.setObjectName("tab_2")
         self.tabWidget.addTab(self.tab_2, "")
@@ -227,6 +253,10 @@ class Ui_MainWindow(QMainWindow):
         self.pushButton_7.setGeometry(QtCore.QRect(10, 630, 191, 28))
         self.pushButton_7.setObjectName("pushButton_7")
 
+        self.pushButton_8 = QtWidgets.QPushButton(self.tab_7)
+        self.pushButton_8.setGeometry(QtCore.QRect(870, 60, 93, 28))
+        self.pushButton_8.setObjectName("pushButton_8")
+
         self.label_5 = QtWidgets.QLabel(self.tab)
         self.label_5.setGeometry(QtCore.QRect(400, 90, 121, 16))
         font = QtGui.QFont()
@@ -285,12 +315,16 @@ class Ui_MainWindow(QMainWindow):
 
         self.pushButton_7.setText(_translate("MainWindow", "Сохранить"))
 
+        self.pushButton_8.setText(_translate("MainWindow", "Рассчитать"))
+
 
         self.label_5.setText(_translate("MainWindow", "Шаблоны схем"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "Позиции"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Цели"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Устья"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_drill), _translate("MainWindow", "Расчет бурения"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_7), _translate("MainWindow", "Расчет_бурения_1"))
+
 
 
         self.label_6.setText(_translate("MainWindow", "Документ"))
@@ -304,6 +338,10 @@ class Ui_MainWindow(QMainWindow):
         self.label_11.setText(_translate("MainWindow", "Позиции"))
         self.label_12.setText(_translate("MainWindow", "Цели"))
         self.label_13.setText(_translate("MainWindow", "Расчет бурения"))
+
+        self.label_14.setText(_translate("MainWindow", "Расчет бурения"))
+        self.label_15.setText(_translate("MainWindow", "Цели"))
+
 
 
 class Ui_Dialog(QDialog):

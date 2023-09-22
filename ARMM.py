@@ -451,6 +451,7 @@ class ARMM:
         self.dlg.pushButton_3.clicked.connect(self.edit_rigs)
         self.dlg.pushButton_5.clicked.connect(self.open_new_window)
         self.dlg.pushButton_7.clicked.connect(self.save_positions_to_BD)
+        self.dlg.pushButton_8.clicked.connect(self.calc_pos_and_targets)
 
         self.fill_from_cmbx()
         self.fill_crs_cmbx()
@@ -461,7 +462,9 @@ class ARMM:
         self.dlg.tableWidget_7.itemDoubleClicked.connect(self.transfer_value)
         self.dlg.tableWidget_8.setSelectionBehavior(QTableWidget.SelectRows)
         self.dlg.tableWidget_8.itemPressed.connect(self.copy_selected_cells)
-        # self.dlg_2.comboBox.setEditable(True)
+        self.dlg.tableWidget_10.itemDoubleClicked.connect(self.show_cell_column)
+
+        # self.calc_pos_and_targets()
 
     def choose_lic_area(self):
         """Метод, который заполняет площадки для соответствующего ЛУ"""
@@ -991,7 +994,6 @@ class ARMM:
         self.dlg.tableWidget_9.clearContents()
         self.col = 0
 
-
     def open_new_window(self):
         self.dlg_2.exec_()
 
@@ -1112,6 +1114,8 @@ class ARMM:
 
         self.fill_pos_in_calc_drill(positions)
 
+        self.fill_pos_in_calc_drill_1(positions)
+
     def fill_pos_in_calc_drill(self, positions):
         """Заполняет таблицу с позициями в поле Расчет бурения"""
         # self.dlg.tableWidget_7.insertRow(0)
@@ -1149,7 +1153,12 @@ class ARMM:
         # print(numbers_targ)
         for row, item in enumerate(numbers_targ):
             num = QTableWidgetItem(str(item))
-            self.dlg.tableWidget_8.setItem(row, 0, num)
+            num_1 = QTableWidgetItem(str(item))
+
+            self.dlg.tableWidget_11.setItem(row, 0, num)
+
+            self.dlg.tableWidget_8.setItem(row, 0, num_1)
+            # self.dlg.tableWidget_11.setItem(row, 0, num)
 
     def transfer_value(self, item):
         # Проверяем, что выбранная ячейка действительно существует
@@ -1180,42 +1189,132 @@ class ARMM:
         for i, row in enumerate(selected_rows):
             text = self.dlg.tableWidget_8.item(row.row(), 0).text()
             item = QTableWidgetItem(text)
-            self.dlg.tableWidget_9.setItem(i+1, self.col, item)
-            # if self.k == 1:
-            #     self.col += 1
-            #     self.k = 0
+            self.dlg.tableWidget_9.setItem(i + 1, self.col, item)
+
         self.col += 1
         print(self.col)
 
+    def fill_pos_in_calc_drill_1(self, positions):
+        for row, item in enumerate(positions):
+            position = QTableWidgetItem(str(f"{item} позиция"))
+            self.dlg.tableWidget_10.setItem(0, row, position)
 
-        # Очищаем столбец 1 self.dlg.tableWidget_9
-        # self.dlg.tableWidget_9.clearContents()
-        # i = 0
-        # k = 0
-        # while self.dlg.tableWidget_9.item(0, k) is not None and self.dlg.tableWidget_9.item(0, k+1) is None:
-        #
-        #     # Вставляем выделенные строки в столбец 1 self.dlg.tableWidget_9
-        #     for i, row in enumerate(selected_rows):
-        #         text = self.dlg.tableWidget_8.item(row.row(), 0).text()
-        #         item = QTableWidgetItem(text)
-        #         self.dlg.tableWidget_9.setItem(i+1, k, item)
-        #     k += 1
-        # Вставляем выделенные строки в столбец 1 self.dlg.tableWidget_9
-        # for el in self.positions:
-        #     if self.dlg.tableWidget_9.item(1, i) is None:
-        #         for k, row in enumerate(selected_rows):
-        #             text = self.dlg.tableWidget_8.item(row.row(), 0).text()
-        #             item = QTableWidgetItem(text)
-        #             self.dlg.tableWidget_9.setItem(k+1, i, item)
-        #     else:
-        #         i += 1
-        # for k in self.positions:
-        #     if self.dlg.tableWidget_9.item(0, i) is not None and self.dlg.tableWidget_9.item(1, i) is None:
-        #
-        #         # Вставляем выделенные строки в столбец 1 self.dlg.tableWidget_9
-        #         for m, row in enumerate(selected_rows):
-        #             text = self.dlg.tableWidget_8.item(row.row(), 0).text()
-        #             item = QTableWidgetItem(text)
-        #             self.dlg.tableWidget_9.setItem(m+1, i, item)
-        #         i += 1
+    def show_cell_column(self):
+        column = self.dlg.tableWidget_10.currentColumn()
+        self.choose_targets(column)
+
+    def choose_targets(self, column):
+        # column = self.dlg.tableWidget_10.currentColumn()
+        # print(column)
+        selected_rows = ""
+        selected_rows = self.dlg.tableWidget_11.selectionModel().selectedRows()
+        # selected_rows = self.dlg.tableWidget_11.selectedItems()
+        for i, row in enumerate(selected_rows):
+            text = self.dlg.tableWidget_11.item(row.row(), 0).text()
+            item = QTableWidgetItem(text)
+            self.dlg.tableWidget_10.setItem(i + 1, column, item)
+
+    def calc_pos_and_targets(self):
+        # Получаем количество строк и столбцов
+        row_count = self.dlg.tableWidget_10.rowCount()
+        col_count = self.dlg.tableWidget_10.columnCount()
+
+        # Создаем словарь для хранения данных
+        result = []
+
+        # Проходимся по столбцам
+        for col in range(col_count):
+            column_data = []
+
+            # Проходимся по строкам в текущем столбце и собираем данные
+            for row in range(row_count):
+                item = self.dlg.tableWidget_10.item(row, col)
+                if item and item.text().strip().isdigit():
+                    column_data.append(int(item.text()))
+
+            # Если есть хотя бы одно число в столбце, добавляем данные в словарь
+            if column_data:
+                result.append({f"{col + 1} позиция": column_data})
+
+        print(result)
+
+        # Загрузка данных из Excel
+        excel_file_path = f'{env["path_target_save"]}/targ1.xlsx'
+
+        df = pd.read_excel(excel_file_path)
+
+        # Создание словарей
+        rez = {}
+        for number, group in df.groupby('Номер'):
+            number_dict = {}
+            for _, row in group.iterrows():
+                name = row['Наименование']
+                X = row['X']
+                Y = row['Y']
+                Z = row['Z']
+                if name not in number_dict:
+                    number_dict[name] = {'name': name, 'X': X, 'Y': Y, 'Z': Z}
+            rez[number] = list(number_dict.values())
+
+        # Вывод словарей в порядке Т1, Т2, Т3
+        # for number, data in result.items():
+        #     data.sort(key=lambda x: x['name'])  # Сортировка по имени
+        #     print(number, data)
+
+        print(rez)
+
+        # Рассчитываем расстояния для каждого номера
+        distances = {}
+
+        for number, points in rez.items():
+            t1 = None
+            t2 = None
+            t3 = None
+
+            for point in points:
+                if point['name'] == 'Т1':
+                    t1 = point
+                elif point['name'] == 'Т2':
+                    t2 = point
+                elif point['name'] == 'Т3':
+                    t3 = point
+
+            if t1 and t2:
+                distance_t1_t2 = self.calculate_distance(t1, t2)
+            else:
+                distance_t1_t2 = None
+
+            if t2 and t3:
+                distance_t2_t3 = self.calculate_distance(t2, t3)
+            else:
+                distance_t2_t3 = None
+
+            if t1 and t3:
+                distance_t1_t3 = self.calculate_distance(t1, t3)
+            else:
+                distance_t1_t3 = None
+
+            distances[number] = {
+                'Т1-Т2': distance_t1_t2,
+                'Т2-Т3': distance_t2_t3,
+                'Т1-Т3': distance_t1_t3
+            }
+
+        # Вывод результатов
+        for number, dist in distances.items():
+            print(f"Номер: {number}")
+            print(f"Расстояние Т1-Т2: {dist['Т1-Т2']}")
+            print(f"Расстояние Т2-Т3: {dist['Т2-Т3']}")
+            print(f"Расстояние Т1-Т3: {dist['Т1-Т3']}")
+
+        print(distances)
+
+        # Функция для вычисления расстояния между двумя точками
+
+    def calculate_distance(self, point1, point2):
+        dx = point1['X'] - point2['X']
+        dy = point1['Y'] - point2['Y']
+        dz = point1['Z'] - point2['Z']
+        distance = (dx ** 2 + dy ** 2 + dz ** 2) ** 0.5
+        return distance
 
