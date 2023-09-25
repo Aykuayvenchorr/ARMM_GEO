@@ -41,7 +41,7 @@ class Position:
             # print(d)
             # print(self.direction())
             temp_c = cmath.rect(int(d), self.direction())
-            print(temp_c)
+            # print(temp_c)
 
             # temp_cc = cmath.rect(50, cmath.pi/2)
             # print(temp_cc)

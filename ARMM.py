@@ -464,8 +464,6 @@ class ARMM:
         self.dlg.tableWidget_8.itemPressed.connect(self.copy_selected_cells)
         self.dlg.tableWidget_10.itemDoubleClicked.connect(self.show_cell_column)
 
-        # self.calc_pos_and_targets()
-
     def choose_lic_area(self):
         """Метод, который заполняет площадки для соответствующего ЛУ"""
         # считываем текущее значение ЛУ
@@ -535,28 +533,19 @@ class ARMM:
         self.append_rig(self.list_rig)
         if self.list_rig:
             self.list_rig.clear()
-        # self.rigs.null_rigs()
         self.fill_scheme_table()
         self.fill_scheme_cmbx()
-        # self.calc_XY_positions()
-
-        # self.fill_position_table()
 
         return self.list_rig
 
     def change_func(self):
         rez = self.dlg.listView_wp.currentIndex().data()
-        # self.model_2.clear()
-        # self.model_2.removeRows(0, self.model_2.columnCount())
         self.choose_wellpad(rez)
-
-        # self.model_2.removeRows(0, self.model_2.rowCount())
 
         return rez
 
     def change_func_2(self):
         rez = self.dlg.listView_rig.currentIndex().data()
-        # self.calc_XY_positions(rez)
         return rez
 
     def update_list_lic_areas(self):
@@ -602,14 +591,7 @@ class ARMM:
 
     def edit_wellpads(self):
         """Метод, который позволяет добавлять и редактировать существующие площадки"""
-        # conn = psycopg2.connect(
-        #     host="localhost",
-        #     port="5432",
-        #     database="arm_db",
-        #     user="postgres",
-        #     password="postgres"
-        # )
-        # cur = conn.cursor()
+
         cur_lic = self.dlg.cmbLic.currentText()
 
         model = self.dlg.tableView_2.model()
@@ -624,10 +606,7 @@ class ARMM:
             self.cur.execute("INSERT INTO wellpad (name, luid, rel) VALUES (%s, %s, %s)", wp)
             self.conn.commit()
             print("Данные добавлены")
-            # self.cur.close()
-            # self.conn.close()
             self.dlg.lineEdit.clear()
-            # self.run()
             self.load_wellpads()
             self.dlg.cmbLic.setItemText(0, cur_lic)
 
@@ -673,18 +652,10 @@ class ARMM:
 
     def edit_rigs(self):
         """Метод, который позволяет редактировать существующие станки"""
-        # conn = psycopg2.connect(
-        #     host="localhost",
-        #     port="5432",
-        #     database="arm_db",
-        #     user="postgres",
-        #     password="postgres"
-        # )
-        # cur = conn.cursor()
+
         cur_lic = self.dlg.cmbLic.currentText()
 
         model = self.dlg.tableView.model()
-        # data = model._data
 
         if self.text_rig in self.rigs.get_dict_rigs():
             data = model._data
@@ -757,18 +728,6 @@ class ARMM:
         except:
             KeyError
 
-    # def fill_position_table(self):
-    #     """Метод для детального отображения станка в tableview"""
-    #     header = ['Позиции', 'Движки']
-    #     try:
-    #         data = [1, 2]
-    #
-    #         model = MyTableSchemeModel(data, header)
-    #
-    #         self.dlg.tableView_3.setModel(model)
-    #     except:
-    #         KeyError
-
     def fill_scheme_table(self):
         """Метод для заполнения таблицы шаблона схем"""
         # self.dlg.tableWidget.clear()
@@ -778,12 +737,7 @@ class ARMM:
         with open(self.file_path) as file:
             for line in file:
                 line = line.strip().split('#')
-                # print(line)
                 data.append((line[0], line[1]))
-                # data = [
-                #     ('нулевая', '0_0_0'),
-                #     ('5_на_15', '5_5_5_15'),
-                # ]
         for row, item in enumerate(data):
             name_item = QTableWidgetItem(item[0])
             schema_item = QTableWidgetItem(item[1])
@@ -866,8 +820,6 @@ class ARMM:
         self.cur.execute("SELECT * FROM rig")
         rows = self.cur.fetchall()
         self.rigs = Rig(rows)
-        # self.cur.close()
-        # self.conn.close()
 
     def fill_lic_areas(self):
         """Метод для получения лицензионных участков из БД"""
@@ -885,12 +837,6 @@ class ARMM:
     def unactual_rigs(self, relevant, wp_id):
         sql_update_query = """Update rig set rel = %s where wellpad_id = %s"""
         self.cur.execute(sql_update_query, (relevant, wp_id))
-        # if not relevant:
-        #     self.dlg.checkBox_2.setEnabled(False)
-        # if relevant:
-        #     self.dlg.checkBox_2.setEnabled(True)
-        # elif relevant:
-        #     self.dlg.checkBox_2.setEnabled(True)
 
     def save_table_data(self):
         """Сохранить схемы в файл"""
@@ -905,7 +851,6 @@ class ARMM:
                 if item is not None:
                     row_data.append(item.text())
                 else:
-                    # row_data.append('')
                     continue
             data.append(row_data)
         # открытие файла на дозапись, чтобы не удалялось предыдущее
@@ -944,7 +889,6 @@ class ARMM:
         self.dlg.tableWidget_2.setItem(0, 2, x)
         self.dlg.tableWidget_2.setItem(0, 3, y)
 
-        # print(x)
         positions = int(self.dlg.lineEdit_3.text())
         data = []
         i = 1
@@ -954,7 +898,6 @@ class ARMM:
             i += 1
         schema = ['0']
         [schema.append(el) for el in self.dlg.comboBox_2.currentText().strip().split('_')]
-        # print(schema)
 
         if len(data) >= len(schema[1::]):
             for row, item in enumerate(schema):
@@ -969,16 +912,13 @@ class ARMM:
                     if row != 0:
                         self.dlg.tableWidget_2.setItem(row, 4, QTableWidgetItem(str(uuid.uuid4())))
 
-            # self.dlg.tableWidget_2.setItem(0, 2, x)
-            # self.dlg.tableWidget_2.setItem(0, 3, y)
 
         else:
             position = QTableWidgetItem('1')
             movement = QTableWidgetItem('0')
             self.dlg.tableWidget_2.setItem(0, 0, position)
             self.dlg.tableWidget_2.setItem(0, 1, movement)
-            # self.dlg.tableWidget_2.setItem(row, 2, QTableWidgetItem(str(self.positions[row][0])))
-            # self.dlg.tableWidget_2.setItem(row, 3, QTableWidgetItem(str(self.positions[row][1])))
+
             for row, item in enumerate(data, start=1):
                 position = QTableWidgetItem(str(item + 1))
                 movement = QTableWidgetItem(str(schema[row]))
@@ -989,8 +929,6 @@ class ARMM:
                 if row != 0:
                     self.dlg.tableWidget_2.setItem(row, 4, QTableWidgetItem(str(uuid.uuid4())))
 
-            # self.dlg.tableWidget_2.setItem(0, 2, x)
-            # self.dlg.tableWidget_2.setItem(0, 3, y)
         self.dlg.tableWidget_9.clearContents()
         self.col = 0
 
@@ -1046,46 +984,30 @@ class ARMM:
 
     def calc_XY_positions(self, rig):
         """Рассчитывает координаты позиций станка"""
-        # rig = self.change_func_2()
         rig = str(rig)
-        # print(rig)
-
-        # self.cur.execute(f"SELECT ST_AsText(geom) FROM rig WHERE name='{rig}'")
         self.cur.execute(f"SELECT ST_X(geom), ST_Y(geom) FROM rig WHERE name='{rig}'")
         rows = self.cur.fetchall()
-        # self.cur.execute(f"SELECT nds FROM rig WHERE name='{rig}'")
-        # nds = float(self.cur.fetchall()[0][0])
         nds = self.rigs.get_dict_rigs()[rig][3]
-        # print(nds)
 
-        # self.rig = Rig(rows)
         x = rows[0][0]
         y = rows[0][1]
-        rig_pos_0 = Point(x, y)
+        self.rig_pos_0 = Point(x, y)
 
         positions = int(self.dlg.lineEdit_3.text())
 
         schema = self.dlg.comboBox_2.currentText().strip().split('_')[0:positions]
 
-        calc = Position(rig_pos_0, schema, nds)
-
-        # print(calc.point_on_direction())
+        calc = Position(self.rig_pos_0, schema, nds)
 
         self.positions = calc.point_on_direction()
 
-        # print(x)
-        # print(y)
-        # print(rig_pos_0.x)
         return x, y
-        # print(self.rig.get_dict_rigs()[rig][-1])
-        # print(x)
-        # print(y)
 
     def save_positions_to_BD(self):
         """Сохраняет позиции станка в БД"""
         rows = self.dlg.tableWidget_2.rowCount()
         columns = self.dlg.tableWidget_2.columnCount()
-        data = []
+        self.data_posits = []
 
         for row in range(1, rows):
             row_data = []
@@ -1097,18 +1019,17 @@ class ARMM:
                     if item is not None:
                         row_data.append(item.text())
                     else:
-                        # row_data.append('')
                         continue
-                data.append(row_data)
+                self.data_posits.append(row_data)
         rig_id_ = self.rigs.get_dict_rigs()[self.change_func_2()][0]
-        print(data)
+        # print(self.data_posits)
         positions = [1]
 
-        for pos in data:
+        for pos in self.data_posits:
             self.cur.execute(
                 f"INSERT INTO position (number, geom, rig_id) VALUES ('{pos[0]}', 'Point({float(pos[2])} {float(pos[3])})', '{rig_id_}')")
             self.conn.commit()
-            print("Данные добавлены")
+            # print("Данные добавлены")
 
             positions.append(pos[0])
 
@@ -1118,7 +1039,6 @@ class ARMM:
 
     def fill_pos_in_calc_drill(self, positions):
         """Заполняет таблицу с позициями в поле Расчет бурения"""
-        # self.dlg.tableWidget_7.insertRow(0)
 
         for row, item in enumerate(positions):
             position = QTableWidgetItem(str(item))
@@ -1126,12 +1046,8 @@ class ARMM:
 
     def fill_target_table(self, doc):
         """Сохраняет файл с целями по указанному пути"""
-        # selected_file = doc.filePath()
-        # doc.setFilePath(env['path_target_save'])
         shutil.copy(doc.filePath(), env['path_target_save'])
         self.fill_targets_in_calc_drill()
-        # doc.setStorageMode(3)
-        # print(doc.filePath())
 
     def fill_targets_in_calc_drill(self):
         """Заполняет таблицу Цели в поле Расчет бурения"""
@@ -1154,10 +1070,12 @@ class ARMM:
         for row, item in enumerate(numbers_targ):
             num = QTableWidgetItem(str(item))
             num_1 = QTableWidgetItem(str(item))
+            num_2 = QTableWidgetItem(str(item))
 
             self.dlg.tableWidget_11.setItem(row, 0, num)
-
             self.dlg.tableWidget_8.setItem(row, 0, num_1)
+            self.dlg.tableWidget_4.setItem(row, 0, num_2)
+
             # self.dlg.tableWidget_11.setItem(row, 0, num)
 
     def transfer_value(self, item):
@@ -1236,7 +1154,9 @@ class ARMM:
             if column_data:
                 result.append({f"{col + 1} позиция": column_data})
 
-        print(result)
+        # print(result)
+        # [{'1 позиция': [1357, 1358, 1359]}, {'2 позиция': [1357, 1358, 1359]}, {'3 позиция': [1357, 1358]},
+        #  {'4 позиция': [1359]}]
 
         # Загрузка данных из Excel
         excel_file_path = f'{env["path_target_save"]}/targ1.xlsx'
@@ -1244,7 +1164,7 @@ class ARMM:
         df = pd.read_excel(excel_file_path)
 
         # Создание словарей
-        rez = {}
+        rez_targets = {}
         for number, group in df.groupby('Номер'):
             number_dict = {}
             for _, row in group.iterrows():
@@ -1254,19 +1174,24 @@ class ARMM:
                 Z = row['Z']
                 if name not in number_dict:
                     number_dict[name] = {'name': name, 'X': X, 'Y': Y, 'Z': Z}
-            rez[number] = list(number_dict.values())
+            rez_targets[number] = list(number_dict.values())
 
         # Вывод словарей в порядке Т1, Т2, Т3
         # for number, data in result.items():
         #     data.sort(key=lambda x: x['name'])  # Сортировка по имени
         #     print(number, data)
 
-        print(rez)
-
+        # print(rez)
+        # {1357: [{'name': 'Т1', 'X': 100, 'Y': 100, 'Z': 20}, {'name': 'Т3', 'X': 150, 'Y': 150, 'Z': 10},
+        #         {'name': 'Т2', 'X': 200, 'Y': 200, 'Z': 5}],
+        #  1358: [{'name': 'Т1', 'X': 300, 'Y': 300, 'Z': 20}, {'name': 'Т3', 'X': 350, 'Y': 350, 'Z': 10},
+        #         {'name': 'Т2', 'X': 400, 'Y': 400, 'Z': 5}],
+        #  1359: [{'name': 'Т1', 'X': 10, 'Y': 10, 'Z': 20}, {'name': 'Т3', 'X': 20, 'Y': 20, 'Z': 10},
+        #         {'name': 'Т2', 'X': 30, 'Y': 30, 'Z': 5}]}
         # Рассчитываем расстояния для каждого номера
         distances = {}
 
-        for number, points in rez.items():
+        for number, points in rez_targets.items():
             t1 = None
             t2 = None
             t3 = None
@@ -1299,22 +1224,80 @@ class ARMM:
                 'Т2-Т3': distance_t2_t3,
                 'Т1-Т3': distance_t1_t3
             }
-
-        # Вывод результатов
-        for number, dist in distances.items():
-            print(f"Номер: {number}")
-            print(f"Расстояние Т1-Т2: {dist['Т1-Т2']}")
-            print(f"Расстояние Т2-Т3: {dist['Т2-Т3']}")
-            print(f"Расстояние Т1-Т3: {dist['Т1-Т3']}")
-
         print(distances)
+        # {1357: {'Т1-Т2': 142.21462653327893, 'Т2-Т3': 70.88723439378913, 'Т1-Т3': 71.4142842854285},
+        #  1358: {'Т1-Т2': 142.21462653327893, 'Т2-Т3': 70.88723439378913, 'Т1-Т3': 71.4142842854285},
+        #  1359: {'Т1-Т2': 32.01562118716424, 'Т2-Т3': 15.0, 'Т1-Т3': 17.320508075688775}}
 
-        # Функция для вычисления расстояния между двумя точками
+        list_of_positions = [{'number': '1', 'X': self.rig_pos_0.x, 'Y': self.rig_pos_0.y, 'Z': 0}]
+        for pos in self.data_posits:
+            list_of_positions.append({'number': pos[0], 'X': pos[2], 'Y': pos[3], 'Z': 0})
+        # print(list_of_positions)
+        # [{'number': '1', 'X': 100.0, 'Y': 80.0, 'Z': 0},
+        #  {'number': '2', 'X': '98.0', 'Y': '80.0', 'Z': 0},
+        #  {'number': '3', 'X': '96.0', 'Y': '80.0', 'Z': 0},
+        #  {'number': '4', 'X': '94.0', 'Y': '80.0', 'Z': 0}]
+        # print(list_of_positions)
+
+        for el in result:
+            for key, values in el.items():
+                key = str(key.strip().split(' ')[0])  # 1 or 2 or 3 etc
+                # print(key)
+                pos_inf = self.get_position_from_list(list_of_positions, key)
+                # print(pos_inf)
+                for value in values:
+                    list_of_T = self.get_targ_from_dict(rez_targets, value)
+                    for t in list_of_T:
+                        # print(t)
+                        d = self.calculate_distance(pos_inf, t)
+                        print(f"{pos_inf['number']} - {value} - {t['name']}: {d}")
+
+    # {'number': '1', 'X': 100.0, 'Y': 80.0, 'Z': 0}
+    # 1 - 1357 - Т1: 28.284271247461902
+    # 1 - 1357 - Т3: 86.60254037844386
+    # 1 - 1357 - Т2: 156.28499608087785
+    # 1 - 1358 - Т1: 297.9932885150268
+    # 1 - 1358 - Т3: 368.1032463861192
+    # 1 - 1358 - Т2: 438.6627406105971
+    # 1 - 1359 - Т1: 115.75836902790225
+    # 1 - 1359 - Т3: 100.4987562112089
+    # 1 - 1359 - Т2: 86.16843969807043
+    # {'number': '2', 'X': '98.0', 'Y': '80.0', 'Z': 0}
+    # 2 - 1357 - Т1: 28.35489375751565
+    # 2 - 1357 - Т3: 87.77243302996676
+    # 2 - 1357 - Т2: 157.5722056709241
+    # 2 - 1358 - Т1: 299.33927239839414
+    # 2 - 1358 - Т3: 369.4644773181855
+    # 2 - 1358 - Т2: 440.0329533114537
+    # 2 - 1359 - Т1: 114.21033228215387
+    # 2 - 1359 - Т3: 98.91410415102591
+    # 2 - 1359 - Т2: 84.55175929571188
+    # {'number': '3', 'X': '96.0', 'Y': '80.0', 'Z': 0}
+    # 3 - 1357 - Т1: 28.5657137141714
+    # 3 - 1357 - Т3: 88.9719056781409
+    # 3 - 1357 - Т2: 158.8741640418605
+    # 3 - 1358 - Т1: 300.6925339944442
+    # 3 - 1358 - Т3: 370.8314981227997
+    # 3 - 1358 - Т2: 441.40797455415327
+    # {'number': '4', 'X': '94.0', 'Y': '80.0', 'Z': 0}
+    # 4 - 1359 - Т1: 111.15754585272202
+    # 4 - 1359 - Т3: 95.79144011862438
+    # 4 - 1359 - Т2: 81.36952746575342
+
+    def get_position_from_list(self, list_of_pos, pos):
+        for el in list_of_pos:
+            if el['number'] == pos:
+                return el
+
+    def get_targ_from_dict(self, dict_of_targ, targ):
+        for key, value in dict_of_targ.items():
+            if key == targ:
+                return value
 
     def calculate_distance(self, point1, point2):
-        dx = point1['X'] - point2['X']
-        dy = point1['Y'] - point2['Y']
-        dz = point1['Z'] - point2['Z']
+        """Функция для вычисления расстояния между двумя точками"""
+        dx = float(point1['X']) - float(point2['X'])
+        dy = float(point1['Y']) - float(point2['Y'])
+        dz = float(point1['Z']) - float(point2['Z'])
         distance = (dx ** 2 + dy ** 2 + dz ** 2) ** 0.5
         return distance
-
