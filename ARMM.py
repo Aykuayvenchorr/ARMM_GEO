@@ -463,6 +463,8 @@ class ARMM:
         self.dlg.tableWidget_8.setSelectionBehavior(QTableWidget.SelectRows)
         self.dlg.tableWidget_8.itemPressed.connect(self.copy_selected_cells)
         self.dlg.tableWidget_10.itemDoubleClicked.connect(self.show_cell_column)
+        # from .tabs.positions_tab import print_tab
+        # print_tab(self.dlg.tableWidget_10)
 
     def choose_lic_area(self):
         """Метод, который заполняет площадки для соответствующего ЛУ"""
@@ -535,6 +537,8 @@ class ARMM:
             self.list_rig.clear()
         self.fill_scheme_table()
         self.fill_scheme_cmbx()
+        # from .tabs.positions_tab import fill_scheme_cmbx
+        # fill_scheme_cmbx(self.dlg.comboBox_2)
 
         return self.list_rig
 
@@ -860,6 +864,8 @@ class ARMM:
                     f.write('#'.join(row_data) + '\n')
 
         self.fill_scheme_cmbx()
+        # from .tabs.positions_tab import save_table_data
+        # save_table_data(self.dlg.tableWidget, self.dlg.comboBox_2)
 
     def fill_scheme_cmbx(self):
         """Метод для заполнения комбобокса схемами"""
@@ -909,8 +915,8 @@ class ARMM:
 
                     self.dlg.tableWidget_2.setItem(row, 2, QTableWidgetItem(str(self.positions[row][0])))
                     self.dlg.tableWidget_2.setItem(row, 3, QTableWidgetItem(str(self.positions[row][1])))
-                    if row != 0:
-                        self.dlg.tableWidget_2.setItem(row, 4, QTableWidgetItem(str(uuid.uuid4())))
+                    # if row != 0:
+                    #     self.dlg.tableWidget_2.setItem(row, 4, QTableWidgetItem(str(uuid.uuid4())))
 
 
         else:
@@ -926,8 +932,8 @@ class ARMM:
                 self.dlg.tableWidget_2.setItem(row, 1, movement)
                 self.dlg.tableWidget_2.setItem(row, 2, QTableWidgetItem(str(self.positions[row][0])))
                 self.dlg.tableWidget_2.setItem(row, 3, QTableWidgetItem(str(self.positions[row][1])))
-                if row != 0:
-                    self.dlg.tableWidget_2.setItem(row, 4, QTableWidgetItem(str(uuid.uuid4())))
+                # if row != 0:
+                #     self.dlg.tableWidget_2.setItem(row, 4, QTableWidgetItem(str(uuid.uuid4())))
 
         self.dlg.tableWidget_9.clearContents()
         self.col = 0
@@ -1005,6 +1011,14 @@ class ARMM:
 
     def save_positions_to_BD(self):
         """Сохраняет позиции станка в БД"""
+        rig_id_ = self.rigs.get_dict_rigs()[self.change_func_2()][0]
+        self.cur.execute(f"SELECT * FROM position WHERE rig_id='{rig_id_}'")
+        rows_pos = self.cur.fetchall()
+        uuid_list = []
+        for el in rows_pos:
+            uuid_list.append(el[-1])
+
+        # if not rows:
         rows = self.dlg.tableWidget_2.rowCount()
         columns = self.dlg.tableWidget_2.columnCount()
         self.data_posits = []
@@ -1021,28 +1035,59 @@ class ARMM:
                     else:
                         continue
                 self.data_posits.append(row_data)
-        rig_id_ = self.rigs.get_dict_rigs()[self.change_func_2()][0]
-        # print(self.data_posits)
         positions = [1]
-
-        for pos in self.data_posits:
-            self.cur.execute(
-                f"INSERT INTO position (number, geom, rig_id) VALUES ('{pos[0]}', 'Point({float(pos[2])} {float(pos[3])})', '{rig_id_}')")
-            self.conn.commit()
-            # print("Данные добавлены")
-
+        for num, pos in enumerate(self.data_posits):
             positions.append(pos[0])
+            if not rows_pos:
+                id_pos_uuid = uuid.uuid4()
+                self.cur.execute(
+                    f"INSERT INTO position (number, geom, rig_id, id_pos) VALUES ('{pos[0]}', 'Point({float(pos[2])} {float(pos[3])})', '{rig_id_}', '{id_pos_uuid}')")
+                self.conn.commit()
+
+                self.dlg.tableWidget_2.setItem(num + 1, 4, QTableWidgetItem(str(id_pos_uuid)))
+
+        if rows_pos:
+            if len(rows_pos) == len(self.data_posits):
+                for num, pos in enumerate(self.data_posits):
+
+                    sql_update_query = f"UPDATE position SET geom = ST_GeomFromText('Point({float(pos[2])} {float(pos[3])})') WHERE id_pos = %s"
+                    data = (uuid_list[num],)
+                    self.cur.execute(sql_update_query, data)
+                    self.conn.commit()
+            elif len(rows_pos) < len(self.data_posits):
+                for num, pos in enumerate(self.data_posits):
+                    try:
+                        sql_update_query = f"UPDATE position SET geom = ST_GeomFromText('Point({float(pos[2])} {float(pos[3])})') WHERE id_pos = %s"
+                        data = (uuid_list[num],)
+                        self.cur.execute(sql_update_query, data)
+                        self.conn.commit()
+
+                    except IndexError:
+                        id_pos_uuid = uuid.uuid4()
+                        self.cur.execute(
+                            f"INSERT INTO position (number, geom, rig_id, id_pos) VALUES ('{pos[0]}', 'Point({float(pos[2])} {float(pos[3])})', '{rig_id_}', '{id_pos_uuid}')")
+                        self.conn.commit()
+
+                        self.dlg.tableWidget_2.setItem(num + 1, 4, QTableWidgetItem(str(id_pos_uuid)))
+
+            elif len(rows_pos) > len(self.data_posits):
+                i = 0
+                for num, pos in enumerate(self.data_posits):
+
+                    sql_update_query = f"UPDATE position SET geom = ST_GeomFromText('Point({float(pos[2])} {float(pos[3])})') WHERE id_pos = %s"
+                    data = (uuid_list[num],)
+                    self.cur.execute(sql_update_query, data)
+                    i += 1
+                print(i)
+                for num, el in enumerate(uuid_list, start=i):
+                    if num < len(uuid_list):
+                        print(num, el)
+                        sql_delete_query = """DELETE from position where id_pos = %s"""
+                        data = (uuid_list[num],)
+                        self.cur.execute(sql_delete_query, data)
+                        self.conn.commit()
 
         self.fill_pos_in_calc_drill(positions)
-
-        self.fill_pos_in_calc_drill_1(positions)
-
-    def fill_pos_in_calc_drill(self, positions):
-        """Заполняет таблицу с позициями в поле Расчет бурения"""
-
-        for row, item in enumerate(positions):
-            position = QTableWidgetItem(str(item))
-            self.dlg.tableWidget_7.setItem(row, 0, position)
 
     def fill_target_table(self, doc):
         """Сохраняет файл с целями по указанному пути"""
@@ -1112,7 +1157,7 @@ class ARMM:
         self.col += 1
         print(self.col)
 
-    def fill_pos_in_calc_drill_1(self, positions):
+    def fill_pos_in_calc_drill(self, positions):
         for row, item in enumerate(positions):
             position = QTableWidgetItem(str(f"{item} позиция"))
             self.dlg.tableWidget_10.setItem(0, row, position)
@@ -1298,6 +1343,6 @@ class ARMM:
         """Функция для вычисления расстояния между двумя точками"""
         dx = float(point1['X']) - float(point2['X'])
         dy = float(point1['Y']) - float(point2['Y'])
-        dz = float(point1['Z']) - float(point2['Z'])
-        distance = (dx ** 2 + dy ** 2 + dz ** 2) ** 0.5
+        # dz = float(point1['Z']) - float(point2['Z'])
+        distance = (dx ** 2 + dy ** 2) ** 0.5
         return distance
