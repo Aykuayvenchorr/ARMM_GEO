@@ -13,9 +13,6 @@ class Position:
         self.positions = []
 
     def direction(self):
-
-        # print(self.nds)
-
         if self.nds == 0.00000:
             return cmath.pi/2
         elif self.nds == 90:
@@ -38,32 +35,18 @@ class Position:
         posits = [self.point_start.get_point()]
 
         for d in self.dist:
-            # print(d)
-            # print(self.direction())
             temp_c = cmath.rect(int(d), self.direction())
-            # print(temp_c)
-
-            # temp_cc = cmath.rect(50, cmath.pi/2)
-            # print(temp_cc)
-
-            # print(temp_c)
             temp_p = Point(temp_c.real, temp_c.imag)
             new_X = self.point_start.x + temp_p.x
-            # print(new_X)
             new_Y = self.point_start.y + temp_p.y
 
             new = Point(new_X, new_Y)
-            # print(self.direction())
 
             self.point_start = new
             posits.append(new.get_point())
-
-        # print(posits)
-
         return posits
 
 
 
-        # return self.positions
 
 

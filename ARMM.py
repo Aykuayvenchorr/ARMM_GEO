@@ -41,6 +41,7 @@ from qgis.core import (
 )
 
 # Initialize Qt resources from file resources.py
+from .math.geodesy import n_point_nds
 from .modules.position import Position
 from .modules.point import Point
 from .modules.rig import Rig
@@ -441,6 +442,8 @@ class ARMM:
         self.dlg.listView_rig.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.dlg.listView_rig.doubleClicked.connect(self.change_func_2)
         self.dlg.listView_rig.doubleClicked.connect(self.zoom_to_rig)
+        self.dlg.listView_rig.doubleClicked.connect(self.show_doc)
+
 
         self.dlg.Rigs.setEnabled(False)
 
@@ -459,12 +462,14 @@ class ARMM:
         self.dlg_2.pushButton.clicked.connect(self.save_docs)
         self.dlg_2.pushButton.clicked.connect(self.save_dialog)
 
-        self.dlg.tableWidget_7.itemDoubleClicked.connect(self.transfer_value)
-        self.dlg.tableWidget_8.setSelectionBehavior(QTableWidget.SelectRows)
-        self.dlg.tableWidget_8.itemPressed.connect(self.copy_selected_cells)
+        # self.dlg.tableWidget_7.itemDoubleClicked.connect(self.transfer_value)
+        # self.dlg.tableWidget_8.setSelectionBehavior(QTableWidget.SelectRows)
+        # self.dlg.tableWidget_8.itemPressed.connect(self.copy_selected_cells)
         self.dlg.tableWidget_10.itemDoubleClicked.connect(self.show_cell_column)
         # from .tabs.positions_tab import print_tab
         # print_tab(self.dlg.tableWidget_10)
+
+        self.dlg.tableWidget_3.doubleClicked.connect(self.fill_targets_in_calc_drill)
 
     def choose_lic_area(self):
         """Метод, который заполняет площадки для соответствующего ЛУ"""
@@ -912,7 +917,6 @@ class ARMM:
                     movement = QTableWidgetItem(str(item))
                     self.dlg.tableWidget_2.setItem(row, 0, position)
                     self.dlg.tableWidget_2.setItem(row, 1, movement)
-
                     self.dlg.tableWidget_2.setItem(row, 2, QTableWidgetItem(str(self.positions[row][0])))
                     self.dlg.tableWidget_2.setItem(row, 3, QTableWidgetItem(str(self.positions[row][1])))
                     # if row != 0:
@@ -935,7 +939,6 @@ class ARMM:
                 # if row != 0:
                 #     self.dlg.tableWidget_2.setItem(row, 4, QTableWidgetItem(str(uuid.uuid4())))
 
-        self.dlg.tableWidget_9.clearContents()
         self.col = 0
 
     def open_new_window(self):
@@ -978,13 +981,13 @@ class ARMM:
     def save_dialog(self):
         """Сохраняет информацию о документе в таблицу Документы в поле Цели"""
 
-        date_ = QTableWidgetItem(str(self.dlg_2.dateEdit.date().toPyDate()))
-        from_who = QTableWidgetItem(str(self.dlg_2.comboBox.currentText()))
-        rel = QTableWidgetItem(str(self.dlg_2.checkBox.isChecked()))
-        self.dlg.tableWidget_3.insertRow(0)
-        self.dlg.tableWidget_3.setItem(0, 0, date_)
-        self.dlg.tableWidget_3.setItem(0, 1, from_who)
-        self.dlg.tableWidget_3.setItem(0, 3, rel)
+        # date_ = QTableWidgetItem(str(self.dlg_2.dateEdit.date().toPyDate()))
+        # from_who = QTableWidgetItem(str(self.dlg_2.comboBox.currentText()))
+        # rel = QTableWidgetItem(str(self.dlg_2.checkBox.isChecked()))
+        # self.dlg.tableWidget_3.insertRow(0)
+        # self.dlg.tableWidget_3.setItem(0, 0, date_)
+        # self.dlg.tableWidget_3.setItem(0, 1, from_who)
+        # self.dlg.tableWidget_3.setItem(0, 3, rel)
 
         self.fill_target_table(self.dlg_2.mQgsFileWidget_2)
 
@@ -1002,10 +1005,11 @@ class ARMM:
         positions = int(self.dlg.lineEdit_3.text())
 
         schema = self.dlg.comboBox_2.currentText().strip().split('_')[0:positions]
+        self.positions = n_point_nds(self.rig_pos_0, nds, schema)
+        # print(self.positions)
+        # calc = Position(self.rig_pos_0, schema, nds)
 
-        calc = Position(self.rig_pos_0, schema, nds)
-
-        self.positions = calc.point_on_direction()
+        # self.positions = calc.point_on_direction()
 
         return x, y
 
@@ -1018,7 +1022,6 @@ class ARMM:
         for el in rows_pos:
             uuid_list.append(el[-1])
 
-        # if not rows:
         rows = self.dlg.tableWidget_2.rowCount()
         columns = self.dlg.tableWidget_2.columnCount()
         self.data_posits = []
@@ -1049,7 +1052,6 @@ class ARMM:
         if rows_pos:
             if len(rows_pos) == len(self.data_posits):
                 for num, pos in enumerate(self.data_posits):
-
                     sql_update_query = f"UPDATE position SET geom = ST_GeomFromText('Point({float(pos[2])} {float(pos[3])})') WHERE id_pos = %s"
                     data = (uuid_list[num],)
                     self.cur.execute(sql_update_query, data)
@@ -1073,15 +1075,13 @@ class ARMM:
             elif len(rows_pos) > len(self.data_posits):
                 i = 0
                 for num, pos in enumerate(self.data_posits):
-
                     sql_update_query = f"UPDATE position SET geom = ST_GeomFromText('Point({float(pos[2])} {float(pos[3])})') WHERE id_pos = %s"
                     data = (uuid_list[num],)
                     self.cur.execute(sql_update_query, data)
                     i += 1
-                print(i)
                 for num, el in enumerate(uuid_list, start=i):
                     if num < len(uuid_list):
-                        print(num, el)
+                        # print(num, el)
                         sql_delete_query = """DELETE from position where id_pos = %s"""
                         data = (uuid_list[num],)
                         self.cur.execute(sql_delete_query, data)
@@ -1091,71 +1091,162 @@ class ARMM:
 
     def fill_target_table(self, doc):
         """Сохраняет файл с целями по указанному пути"""
-        shutil.copy(doc.filePath(), env['path_target_save'])
-        self.fill_targets_in_calc_drill()
+        rig_id_ = self.rigs.get_dict_rigs()[self.change_func_2()][0]
 
-    def fill_targets_in_calc_drill(self):
-        """Заполняет таблицу Цели в поле Расчет бурения"""
-        excel_file_path = f'{env["path_target_save"]}/targ1.xlsx'
+        shutil.copy(doc.filePath(), env['path_target_save'])
+        fileinfo = doc.filePath()
+        file_name = os.path.basename(fileinfo)
+        date_ = str(self.dlg_2.dateEdit.date().toPyDate())
+        from_who = str(self.dlg_2.comboBox.currentText())
+        crs_ = str(self.dlg_2.comboBox_2.currentText())
+        self.cur.execute(
+            f"INSERT INTO rig_doc (note, rig_id, name, date_info, from_who, crs) VALUES ('{file_name}', '{rig_id_}', '{file_name}', '{date_}', '{from_who}', '{crs_}')")
+        self.conn.commit()
+        self.show_doc()
+
+        excel_file_path = f'{env["path_target_save"]}/{file_name}'
+
+        self.cur.execute(f"SELECT id FROM rig_doc WHERE name='{file_name}'")
+        id_doc_ = self.cur.fetchall()
 
         # Загрузить файл Excel в DataFrame
         df = pd.read_excel(excel_file_path)
 
         # Выбрать колонку "Наименование" и прочитать ее значения в список
         number_column = df['Номер'].tolist()
+        number_column_set = set(df['Номер'].tolist())
+        name_column = df['Наименование'].tolist()
+        sequence_column = df['Последовательность'].tolist()
+        x_column = df['X'].tolist()
+        y_column = df['Y'].tolist()
+        z_column = df['Z'].tolist()
+        layer_column = df['Пласт'].tolist()
+        rel_column = df['Актуальность'].tolist()
+
+        cur_lic = self.dlg.cmbLic.currentText()
+        id_lic_ = self.lic_areas.get_dict_lic_area()[cur_lic]
+        # print(number_column)
+        targ_dict = {}
+        for i, item in enumerate(number_column):
+            targ_dict[item] = [name_column[i], sequence_column[i], x_column[i], y_column[i], z_column[i],
+                               layer_column[i], rel_column[i]]
+
+        for i, item in enumerate(number_column_set):
+            self.cur.execute(
+                f"INSERT INTO target_number (number, rel, id_lic) VALUES ('{item}', 'true', '{id_lic_}')")
+        self.conn.commit()
+
+        id_number_dict = {}
+        for i, item in enumerate(number_column_set):
+            self.cur.execute(f"SELECT id, number FROM target_number WHERE number='{item}'")
+            id_number_ = self.cur.fetchall()
+            id_number_dict[id_number_[0][1]] = id_number_[0][0]
+
+        for i, item in enumerate(number_column):
+            self.cur.execute(
+                f"INSERT INTO target_data (id_number, name, sequence, geom, layer, rel, id_doc) "
+                f"VALUES ('{id_number_dict[str(item)]}', '{name_column[i]}', '{sequence_column[i]}', "
+                f"'Point({float(x_column[i])} {float(y_column[i])} {float(z_column[i])})', "
+                f"'{layer_column[i]}', '{rel_column[i]}', '{id_doc_[0][0]}')")
+
+        self.conn.commit()
+
+    def fill_targets_in_calc_drill(self, item):
+        """Заполняет таблицу Цели в поле Расчет бурения"""
+        row = item.row()
+        file_name = self.dlg.tableWidget_3.item(row, 2).text()
+        # print(file_name)
+        excel_file_path = f'{env["path_target_save"]}/{file_name}'
+
+        # Загрузить файл Excel в DataFrame
+        df = pd.read_excel(excel_file_path)
+
+        # Выбрать колонку "Наименование" и прочитать ее значения в список
+        number_column = df['Номер'].tolist()
+        name_column = df['Наименование'].tolist()
+        sequence_column = df['Последовательность'].tolist()
+        x_column = df['X'].tolist()
+        y_column = df['Y'].tolist()
+        z_column = df['Z'].tolist()
+        layer_column = df['Пласт'].tolist()
+        rel_column = df['Актуальность'].tolist()
 
         numbers_targ = []
+        names_targ = []
+        sequences_targ = []
+        x_targ = []
+        y_targ = []
+        z_targ = []
+        layers_targ = []
+        rel_targ = []
 
         # Вывести значения колонки "Номер"
-        for value in number_column:
-            if value not in numbers_targ:
-                numbers_targ.append(value)
+        for i, value in enumerate(number_column):
+            # if value not in numbers_targ:
+            numbers_targ.append(value)
+            names_targ.append(name_column[i])
+            sequences_targ.append(sequence_column[i])
+            x_targ.append(x_column[i])
+            y_targ.append(y_column[i])
+            z_targ.append(z_column[i])
+            layers_targ.append(layer_column[i])
+            rel_targ.append(rel_column[i])
 
-        # print(numbers_targ)
-        for row, item in enumerate(numbers_targ):
+        for row, item in enumerate(set(numbers_targ)):
             num = QTableWidgetItem(str(item))
-            num_1 = QTableWidgetItem(str(item))
-            num_2 = QTableWidgetItem(str(item))
 
             self.dlg.tableWidget_11.setItem(row, 0, num)
-            self.dlg.tableWidget_8.setItem(row, 0, num_1)
-            self.dlg.tableWidget_4.setItem(row, 0, num_2)
+
+
+        for row, item in enumerate(numbers_targ):
+            # num = QTableWidgetItem(str(item))
+            num_2 = QTableWidgetItem(str(item))
+            name = QTableWidgetItem(str(names_targ[row]))
+            sequence = QTableWidgetItem(str(sequences_targ[row]))
+            x = QTableWidgetItem(str(x_targ[row]))
+            y = QTableWidgetItem(str(y_targ[row]))
+            z = QTableWidgetItem(str(z_targ[row]))
+            layer = QTableWidgetItem(str(layers_targ[row]))
+            rel = QTableWidgetItem(str(rel_targ[row]))
 
             # self.dlg.tableWidget_11.setItem(row, 0, num)
 
-    def transfer_value(self, item):
-        # Проверяем, что выбранная ячейка действительно существует
-        if item:
-            # Получаем текст из выбранной ячейки
-            text = item.text()
+            self.dlg.tableWidget_4.setItem(row, 0, num_2)
+            self.dlg.tableWidget_4.setItem(row, 1, name)
+            self.dlg.tableWidget_4.setItem(row, 2, sequence)
+            self.dlg.tableWidget_4.setItem(row, 3, x)
+            self.dlg.tableWidget_4.setItem(row, 4, y)
+            self.dlg.tableWidget_4.setItem(row, 5, z)
+            self.dlg.tableWidget_4.setItem(row, 6, layer)
+            self.dlg.tableWidget_4.setItem(row, 7, rel)
 
-            # Создаем новый элемент таблицы для self.dlg.tablewidget_9
-            new_item = QTableWidgetItem(f"{text} позиция")
-            i = 0
-            # self.col = -1
-            # self.k = 0
+    def show_doc(self):
+        self.dlg.tableWidget_3.clear()
+        self.dlg.tableWidget_4.clear()
+        self.dlg.tableWidget_3.setHorizontalHeaderLabels(['Дата', 'От кого', 'Название документа', 'Система координат', 'Актуальность', 'id'])
+        self.dlg.tableWidget_4.setHorizontalHeaderLabels(['Номер', 'Наименование', 'Последовательность', 'X', 'Y', 'Z', 'Пласт', 'Актуальность', 'id'])
 
-            for el in self.positions:
-                if self.dlg.tableWidget_9.item(0, i) is None:
-                    # Устанавливаем новый элемент в 1 столбец и 1 строку self.dlg.tablewidget_9
-                    self.dlg.tableWidget_9.setItem(0, i, new_item)
-                    # self.k += 1
-                    # self.col += 1
+        rig_id_ = self.rigs.get_dict_rigs()[self.change_func_2()][0]
+        self.cur.execute(f"SELECT date_info, from_who, name, crs, rel, id FROM rig_doc WHERE rig_id='{rig_id_}'")
+        rows_docs = self.cur.fetchall()
+        # print(rows_docs)
+        for el in rows_docs:
 
-                else:
-                    i += 1
-                    # self.col += 1
+            date_info = QTableWidgetItem(el[0])
+            from_who = QTableWidgetItem(el[1])
+            name = QTableWidgetItem(el[2])
+            crs = QTableWidgetItem(el[3])
+            rel = QTableWidgetItem(str(el[4]))
+            id = QTableWidgetItem(str(el[5]))
 
-    def copy_selected_cells(self, item):
-        # Получаем выделенные строки
-        selected_rows = self.dlg.tableWidget_8.selectionModel().selectedRows()
-        for i, row in enumerate(selected_rows):
-            text = self.dlg.tableWidget_8.item(row.row(), 0).text()
-            item = QTableWidgetItem(text)
-            self.dlg.tableWidget_9.setItem(i + 1, self.col, item)
+            self.dlg.tableWidget_3.insertRow(0)
+            self.dlg.tableWidget_3.setItem(0, 0, date_info)
+            self.dlg.tableWidget_3.setItem(0, 1, from_who)
+            self.dlg.tableWidget_3.setItem(0, 2, name)
+            self.dlg.tableWidget_3.setItem(0, 3, crs)
+            self.dlg.tableWidget_3.setItem(0, 4, rel)
+            self.dlg.tableWidget_3.setItem(0, 5, id)
 
-        self.col += 1
-        print(self.col)
 
     def fill_pos_in_calc_drill(self, positions):
         for row, item in enumerate(positions):
@@ -1167,11 +1258,7 @@ class ARMM:
         self.choose_targets(column)
 
     def choose_targets(self, column):
-        # column = self.dlg.tableWidget_10.currentColumn()
-        # print(column)
-        selected_rows = ""
         selected_rows = self.dlg.tableWidget_11.selectionModel().selectedRows()
-        # selected_rows = self.dlg.tableWidget_11.selectedItems()
         for i, row in enumerate(selected_rows):
             text = self.dlg.tableWidget_11.item(row.row(), 0).text()
             item = QTableWidgetItem(text)
